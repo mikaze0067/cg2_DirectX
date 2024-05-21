@@ -72,7 +72,7 @@ IDxcBlob* CompileShader(
 	IDxcIncludeHandler* includeHandler)
 {
 	//これからシェーダーをコンパイルする旨をログに出す
-	Log(ConvertString(std::format(L"Begin CompilerShader, path:{}\n", filePath, profile)));
+	Log(ConvertString(std::format(L"Begin CompilerShader, path:{}, profile:{}\n", filePath, profile)));
 	//hlslファイルを読む
 	IDxcBlobEncoding* shaderSource = nullptr;
 	HRESULT hr = dxcUtils->LoadFile(filePath.c_str(), nullptr, &shaderSource);
@@ -89,7 +89,7 @@ IDxcBlob* CompileShader(
 		L"-E", L"main", //エントリーポイントの指定、基本的にmain以外にはしない
 		L"-T", profile, //ShaderProfileの設定
 		L"-Zi", L"-Qembed_debug", //デバッグ用の情報を埋め込む
-		L"-Od"   //最適化を外しておく
+		L"-Od",   //最適化を外しておく
 		L"-Zpr"  //メモリレイアウトは行優先
 	};
 	//実際にShaderをコンパイルする
@@ -383,6 +383,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//RootSignature作成
 	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+	// RootParameter作成。複数できるので配列。今回は結果1つだけなので長さ1の配列 2-1の内容
+	/*D3D12_ROOT_PARAMETER rootParameters[1] = {};
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;    //CBVを使う
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; //PixelShaderで使う
+	rootParameters[0].Descriptor.ShaderRegister = 0;                    //レジスタ番号と0とバインド
+	descriptionRootSignature.pParameters = rootParameters;              //ルートパラメータ配列へのポインタ
+	descriptionRootSignature.NumParameters = _countof(rootParameters);  //配列の長さ*/
+
 	//シリアライズしてバイナリにする
 	ID3DBlob* signatureBlob = nullptr;
 	ID3DBlob* errorBlob = nullptr;
@@ -396,10 +404,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	hr = device->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
 	assert(SUCCEEDED(hr));
 #pragma endregion
-
-	/*struct VertexShaderInput {
-		float32_t4 position : POSITION0;
-	};*/
 
 #pragma region InputLayout
 	//InputLayout
@@ -421,33 +425,35 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
 #pragma endregion
+
 #pragma region RasiterStateの設定
 	//RasiterzerStateの設定
-	D3D12_RASTERIZER_DESC rasterizeDesc{};
+	D3D12_RASTERIZER_DESC rasterizerDesc{};
 	//裏面（時計回り）を表示しない
-	rasterizeDesc.CullMode = D3D12_CULL_MODE_BACK;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 	//三角形の中を塗りつぶす
-	rasterizeDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 #pragma endregion
 
 #pragma region Shaderのコンパイル
 	//Shaderをコンパイルする
-	IDxcBlob* vertexShaderBlob = CompileShader(L"Object3D.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
+	IDxcBlob *vertexShaderBlob = CompileShader(L"Object3D.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
 	assert(vertexShaderBlob != nullptr);
 
-	IDxcBlob* pixelShaderBlob = CompileShader(L"Object3D.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
-	assert(pixelShaderBlob!=nullptr);
+	IDxcBlob *pixelShaderBlob = CompileShader(L"Object3D.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
+	assert(pixelShaderBlob != nullptr);
 
 #pragma endregion
 
+#pragma region PSOの生成
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 	graphicsPipelineStateDesc.pRootSignature = rootSignature;//RootSignature
 	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;//InputLayout
 	graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(),vertexShaderBlob->GetBufferSize() };//VertexShader
 	graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(),pixelShaderBlob->GetBufferSize() };//PixelShader
 	graphicsPipelineStateDesc.BlendState = blendDesc;//BlendState
-	graphicsPipelineStateDesc.RasterizerState = rasterizeDesc;//RasterizerState
+	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;//RasterizerState
 	//書き込むRTVの情報
 	graphicsPipelineStateDesc.NumRenderTargets = 1;
 	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
@@ -461,44 +467,46 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
 	assert(SUCCEEDED(hr));
 
+#pragma endregion 
 	
 	//頂点リソース用のヒープの設定
 	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
-	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;//
+	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;//UploadHeapを使う
 	//頂点リソースの設定
 	D3D12_RESOURCE_DESC vertexResourceDesc{};
 	//バッファリソース。テクスチャ
 	vertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	vertexResourceDesc.Width = sizeof(Vector4) * 3;//
-	//
+	vertexResourceDesc.Width = sizeof(Vector4) * 3;//リソースのサイズ。今回はVector4を３頂点分
+	//バッファの場合はこれらは1にする決まり
 	vertexResourceDesc.Height = 1;
 	vertexResourceDesc.DepthOrArraySize = 1;
 	vertexResourceDesc.MipLevels = 1;
 	vertexResourceDesc.SampleDesc.Count = 1;
-	//
+	//バッファの場合はこれにする決まり
 	vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	//
+	//実際に頂点リソースを作る
 	ID3D12Resource* vertexResource = nullptr;
 	hr = device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &vertexResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&vertexResource));
 	assert(SUCCEEDED(hr));
 
+    //頂点バッファビューを作成
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
-	//
+	//リソースの先頭のアドレスから使う
 	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
-	//
+	//使用するリソースのサイズは頂点3つ分のサイズ
 	vertexBufferView.SizeInBytes = sizeof(Vector4) * 3;
-	//
+	//1頂点あたりのサイズ
 	vertexBufferView.StrideInBytes = sizeof(Vector4);
 
-	//
+	//頂点リソースにデータを書き込む
 	Vector4* vertexData = nullptr;
-	//
+	//書き込む為のアドレスを取得
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-	//
+	//左下
 	vertexData[0] = { -0.5f,-0.5f,0.0f,1.0f };
-	//
+	//上
 	vertexData[1] = { 0.0f,0.5f,0.0f,1.0f };
-	//
+	//右下
 	vertexData[2] = { 0.5f,-0.5f,0.0f,1.0f };
 
 	//出力ウィンドウの文字出力
