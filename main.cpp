@@ -8,11 +8,13 @@
 #include <dxgidebug.h>
 #include <dxcapi.h>
 #include "Vector4.h"
+#include "Matrix4x4.h"
 
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
 #pragma comment(lib,"dxguid.lib")
 #pragma comment(lib,"dxcompiler.lib")
+
 
 
 void Log(const std::string& message) {
@@ -71,7 +73,7 @@ IDxcBlob* CompileShader(
 	IDxcIncludeHandler* includeHandler)
 {
 	//これからシェーダーをコンパイルする旨をログに出す
-	Log(ConvertString(std::format(L"Begin CompilerShader, path:{}\n", filePath, profile)));
+	Log(ConvertString(std::format(L"Begin CompilerShader, path:{}, profile:{}\n", filePath, profile)));
 	//hlslファイルを読む
 	IDxcBlobEncoding* shaderSource = nullptr;
 	HRESULT hr = dxcUtils->LoadFile(filePath.c_str(), nullptr, &shaderSource);
@@ -85,10 +87,10 @@ IDxcBlob* CompileShader(
 
 	LPCWSTR arguments[] = {
 		filePath.c_str(), //コンパイル対象のhlslファイル名
-		L"-E",L"main", //エントリーポイントの指定、基本的にmain以外にはしない
-		L"-T",profile, //ShaderProfileの設定
-		L"-Zi",L"-Qembed_debug", //デバッグ用の情報を埋め込む
-		L"-Od"   //最適化を外しておく
+		L"-E", L"main", //エントリーポイントの指定、基本的にmain以外にはしない
+		L"-T", profile, //ShaderProfileの設定
+		L"-Zi", L"-Qembed_debug", //デバッグ用の情報を埋め込む
+		L"-Od",   //最適化を外しておく
 		L"-Zpr"  //メモリレイアウトは行優先
 	};
 	//実際にShaderをコンパイルする
@@ -102,6 +104,8 @@ IDxcBlob* CompileShader(
 	);
 	//コンパイルエラーではなくdxcが起動できないなど致命的な状況
 	assert(SUCCEEDED(hr));
+
+
 	//警告・エラーが出たらログに出して止める
 	IDxcBlobUtf8* shaderError = nullptr;
 	shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
@@ -115,7 +119,7 @@ IDxcBlob* CompileShader(
 	hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
 	assert(SUCCEEDED(hr));
 	//成功したログを出す
-	Log(ConvertString(std::format(L"Compile Succeeded,path:{},profile:{}\n", filePath, profile)));
+	Log(ConvertString(std::format(L"Compile Succeeded, path:{}, profile:{}\n", filePath, profile)));
 	//もうつかわないリソースを解放
 	shaderSource->Release();
 	shaderResult->Release();
@@ -363,7 +367,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	assert(SUCCEEDED(hr));
 
-	//
+	//dxcCompilerを初期化
 	IDxcUtils* dxcUtils = nullptr;
 	IDxcCompiler3* dxcCompiler = nullptr;
 	hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
@@ -371,7 +375,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
 	assert(SUCCEEDED(hr));
 
-	//
+	//現時点ではincludeはしないが、includeに対応するための設定を行っておく
 	IDxcIncludeHandler* includeHandler = nullptr;
 	hr = dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
 	assert(SUCCEEDED(hr));
@@ -395,7 +399,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Log(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
 		assert(false);
 	}
-	//
+	//バイナリをもとに生成
 	ID3D12RootSignature* rootSignature = nullptr;
 	hr = device->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
 	assert(SUCCEEDED(hr));
@@ -459,11 +463,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	graphicsPipelineStateDesc.SampleDesc.Count = 1;
 	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
 	//実際に生成
-	ID3D12PipelineState *graphicsPipelineState = nullptr;
+	ID3D12PipelineState* graphicsPipelineState = nullptr;
 	hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
 	assert(SUCCEEDED(hr));
 
 #pragma endregion 
+
 	//頂点リソース用のヒープの設定
 	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
 	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;//UploadHeapを使う
@@ -480,11 +485,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//バッファの場合はこれにする決まり
 	vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	//実際に頂点リソースを作る
-	ID3D12Resource *vertexResource = nullptr;
+	ID3D12Resource* vertexResource = nullptr;
 	hr = device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &vertexResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&vertexResource));
 	assert(SUCCEEDED(hr));
 
-	//頂点バッファビューを作成
+    //頂点バッファビューを作成
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
 	//リソースの先頭のアドレスから使う
 	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
@@ -494,9 +499,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	vertexBufferView.StrideInBytes = sizeof(Vector4);
 
 	//頂点リソースにデータを書き込む
-	Vector4 *vertexData = nullptr;
+	Vector4* vertexData = nullptr;
 	//書き込む為のアドレスを取得
-	vertexResource->Map(0, nullptr, reinterpret_cast<void **>(&vertexData));
+	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
 	//左下
 	vertexData[0] = { -0.5f,-0.5f,0.0f,1.0f };
 	//上
@@ -533,7 +538,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
 	commandList->DrawInstanced(3, 1, 0, 0);
 
+	//RootParameter作成。PixelShaderのMaterialとVertexShaderのTransform
+	D3D12_ROOT_PARAMETER RootParameter[2] = {};
+	RootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;     //CBVを使う
+	RootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;  //PaPixelShaderで使う
+	RootParameter[0].Descriptor.ShaderRegister = 0;                     //レジスタ番号0を使う
+	RootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;     //CBVを使う
+	RootParameter[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; //VertexShaderで使う
+	RootParameter[1].Descriptor.ShaderRegister = 0;                     //レジスタ番号0を使う
+	descriptionRootSignature.pParameters = rootParameters;              //ルートパラメータ配列へのポインタ
+	descriptionRootSignature.NumParameters = _countof(rootParameters);  //配列の長さ
 
+	//
+	//ID3D12Resource *wvpResource = CreateBufferResource(device, sizeof(Matrix4x4));
 
 	//出力ウィンドウの文字出力
 	Log("Hello DirectX!\n");
@@ -619,6 +636,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	device->Release();
 	useAdapter->Release();
 	dxgiFactory->Release();
+	vertexResource->Release();
+	graphicsPipelineState->Release();
+	signatureBlob->Release();
+	if (errorBlob) {
+		errorBlob->Release();
+	}
+	rootSignature->Release();
+	pixelShaderBlob->Release();
+	vertexShaderBlob->Release();
 
 #ifdef _DEBUG
 	debugController->Release();
