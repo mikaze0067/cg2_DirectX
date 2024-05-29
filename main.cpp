@@ -527,25 +527,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	scissorRect.top = 0;
 	scissorRect.bottom = kClientHeight;
 
-	commandList->RSSetViewports(1, &viewport); //viewportを設定
-	commandList->RSSetScissorRects(1, &scissorRect); //scissorを設定
-	//rootSignatureを設定。PSOに設定しているけど別途設定が必要
-	commandList->SetGraphicsRootSignature(rootSignature);
-	commandList->SetPipelineState(graphicsPipelineState); //PSOを設定
-	commandList->IASetVertexBuffers(0, 1, &vertexBufferView); //VBVを設定
-	//形状を設定。PSOに設定しているものとはまた別。同じものを設定すると考えておけば良い
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
-	commandList->DrawInstanced(3, 1, 0, 0);
-
 	//RootParameter作成。PixelShaderのMaterialとVertexShaderのTransform
-	D3D12_ROOT_PARAMETER RootParameter[2] = {};
-	RootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;     //CBVを使う
-	RootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;  //PaPixelShaderで使う
-	RootParameter[0].Descriptor.ShaderRegister = 0;                     //レジスタ番号0を使う
-	RootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;     //CBVを使う
-	RootParameter[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; //VertexShaderで使う
-	RootParameter[1].Descriptor.ShaderRegister = 0;                     //レジスタ番号0を使う
+	D3D12_ROOT_PARAMETER rootParameter[2] = {};
+	rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;     //CBVを使う
+	rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;  //PaPixelShaderで使う
+	rootParameter[0].Descriptor.ShaderRegister = 0;                     //レジスタ番号0を使う
+	rootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;     //CBVを使う
+	rootParameter[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; //VertexShaderで使う
+	rootParameter[1].Descriptor.ShaderRegister = 0;                     //レジスタ番号0を使う
 	descriptionRootSignature.pParameters = rootParameters;              //ルートパラメータ配列へのポインタ
 	descriptionRootSignature.NumParameters = _countof(rootParameters);  //配列の長さ
 
@@ -588,6 +577,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//指定した色で画面全体をクリアする
 			float clearColor[] = { 0.1f,0.25f,0.5f,1.0f }; //青っぽい色。RGBAの順 
 			commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
+
+			commandList->RSSetViewports(1, &viewport); //viewportを設定
+			commandList->RSSetScissorRects(1, &scissorRect); //scissorを設定
+			//rootSignatureを設定。PSOに設定しているけど別途設定が必要
+			commandList->SetGraphicsRootSignature(rootSignature);
+			commandList->SetPipelineState(graphicsPipelineState); //PSOを設定
+			commandList->IASetVertexBuffers(0, 1, &vertexBufferView); //VBVを設定
+			//形状を設定。PSOに設定しているものとはまた別。同じものを設定すると考えておけば良い
+			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			//マテリアルCBufferの場所を設定
+			commandList->SetGraphicsRootConstantBufferView(0, ->GetGPUVirtualAddress);
+			//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
+			commandList->DrawInstanced(3, 1, 0, 0);
 
 			//画面に描く処理はすべて終わり、画面に映すので、状態を遷移
 			//今回はRenderTargetからPresentにする
