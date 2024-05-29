@@ -383,13 +383,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//RootSignature作成
 	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-	// RootParameter作成。複数できるので配列。今回は結果1つだけなので長さ1の配列 2-1の内容
-	/*D3D12_ROOT_PARAMETER rootParameters[1] = {};
-	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;    //CBVを使う
-	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; //PixelShaderで使う
-	rootParameters[0].Descriptor.ShaderRegister = 0;                    //レジスタ番号と0とバインド
-	descriptionRootSignature.pParameters = rootParameters;              //ルートパラメータ配列へのポインタ
-	descriptionRootSignature.NumParameters = _countof(rootParameters);  //配列の長さ*/
 	//シリアライズしてバイナリにする
 	ID3DBlob* signatureBlob = nullptr;
 	ID3DBlob* errorBlob = nullptr;
@@ -525,17 +518,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	scissorRect.top = 0;
 	scissorRect.bottom = kClientHeight;
 
-	commandList->RSSetViewports(1, &viewport); //viewportを設定
-	commandList->RSSetScissorRects(1, &scissorRect); //scissorを設定
-	//rootSignatureを設定。PSOに設定しているけど別途設定が必要
-	commandList->SetGraphicsRootSignature(rootSignature);
-	commandList->SetPipelineState(graphicsPipelineState); //PSOを設定
-	commandList->IASetVertexBuffers(0, 1, &vertexBufferView); //VBVを設定
-	//形状を設定。PSOに設定しているものとはまた別。同じものを設定すると考えておけば良い
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
-	commandList->DrawInstanced(3, 1, 0, 0);
-
 	//出力ウィンドウの文字出力
 	Log("Hello DirectX!\n");
 
@@ -572,6 +554,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//指定した色で画面全体をクリアする
 			float clearColor[] = { 0.1f,0.25f,0.5f,1.0f }; //青っぽい色。RGBAの順 
 			commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
+
+			commandList->RSSetViewports(1, &viewport); //viewportを設定
+			commandList->RSSetScissorRects(1, &scissorRect); //scissorを設定
+			//rootSignatureを設定。PSOに設定しているけど別途設定が必要
+			commandList->SetGraphicsRootSignature(rootSignature);
+			commandList->SetPipelineState(graphicsPipelineState); //PSOを設定
+			commandList->IASetVertexBuffers(0, 1, &vertexBufferView); //VBVを設定
+			//形状を設定。PSOに設定しているものとはまた別。同じものを設定すると考えておけば良い
+			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
+			commandList->DrawInstanced(3, 1, 0, 0);
 
 			//画面に描く処理はすべて終わり、画面に映すので、状態を遷移
 			//今回はRenderTargetからPresentにする
