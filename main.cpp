@@ -541,18 +541,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #pragma endregion
 
-	/*ID3D12Resource* CreateBufferResource(ID3D12Device* device, size_t sizeInBytes);
+	ID3D12Resource* CreateBufferResource(ID3D12Device* device, size_t sizeInBytes);
 
-	vertexResource = CreateBufferResource(device, sizeof(Vector4) * 3);*/
+	vertexResource = CreateBufferResource(device, sizeof(Vector4) * 3);
 
 	//マテリアル用のリソースを作る。今回はcolor1つ分のサイズを用意する
-	//ID3D12Resource* materialResource = CreateBufferResource(device, sizeof(Vector4));
-	////マテリアルにデータを書き込む
-	//Vector4* materialData = nullptr;
-	////書き込むためのアドレスを取得
-	//materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
-	////今回は赤を書き込んでみる
-	//*materialData = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+	ID3D12Resource* materialResource = CreateBufferResource(device, sizeof(Vector4));
+	//マテリアルにデータを書き込む
+	Vector4* materialData = nullptr;
+	//書き込むためのアドレスを取得
+	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
+	//今回は赤を書き込んでみる
+	*materialData = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
 
 	//出力ウィンドウの文字出力
 	//Log("Hello DirectX!\n");
