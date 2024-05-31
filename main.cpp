@@ -15,7 +15,6 @@
 #pragma comment(lib,"dxcompiler.lib")
 
 
-
 void Log(const std::string& message) {
 	OutputDebugStringA(message.c_str());
 }
