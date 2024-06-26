@@ -636,7 +636,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//これから書き込むバックバッファのインデックスを取得
 			UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
-
 			//TransitionBarrierの設定
 			D3D12_RESOURCE_BARRIER barrier{};
 			//今回位のバリアはTransition
