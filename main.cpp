@@ -524,6 +524,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #pragma endregion
 
+#pragma region 頂点リソース
+
 	//頂点リソースにデータを書き込む
 	Vector4* vertexData = nullptr;
 	//書き込む為のアドレスを取得
@@ -534,6 +536,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	vertexData[1] = { 0.0f,0.5f,0.0f,1.0f };
 	//右下
 	vertexData[2] = { 0.5f,-0.5f,0.0f,1.0f };
+#pragma endregion
+
 
 #pragma region ビューポート
 	D3D12_VIEWPORT viewport{};
