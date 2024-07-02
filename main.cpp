@@ -668,6 +668,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//右下
 	vertexData[2].position = { 0.5f,-0.5f,0.0f,1.0f };
 	vertexData[2].texcoord = { 1.0f,1.0f };
+	
 #pragma endregion
 
 	//Textureを読んで転送する
@@ -715,6 +716,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
 	//単位行列を書き込んでおく
 	*wvpData = MakeIdentity4x4();
+
+	ID3D12Resource* transformationMatrixResourceSprite = CreateBufferResource(device, sizeof(Matrix4x4));
+
+	/*Matrix4x4* transformationMatrixDataSprite = nullptr;
+	transformationMatrixResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixDataSprite));
+	*transformationMatrixDataSprite = MakeIdentity4x4();*/
 
 	//metadataを基にSRVの設定
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
@@ -816,11 +823,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 			//SRVのDescreptorTableの先頭を設定。2はRootParameter[2]である
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+			//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
+			commandList->DrawInstanced(3, 1, 0, 0);
 
 			ImGui::Render();
 
-			//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
-			commandList->DrawInstanced(3, 1, 0, 0);
+			
 
 			//
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
