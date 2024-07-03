@@ -124,6 +124,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="math\Identity.h" />
     <ClInclude Include="math\Inverse.h" />
     <ClInclude Include="math\Matrix4x4.h" />
+    <ClInclude Include="math\OrthographicMatrix.h" />
     <ClInclude Include="math\PerspectiveFovMatrix.h" />
     <ClInclude Include="math\Vector2.h" />
     <ClInclude Include="math\Vector3.h" />
