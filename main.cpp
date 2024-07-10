@@ -263,7 +263,7 @@ ID3D12Resource* UploadTextureData(ID3D12Resource* texture, const DirectX::Scratc
 	return intermediateResource;
 }
 
-ID3D12Resource* CreateDepthStenCilTextureResource(ID3D12Device* device, int32_t width, int32_t height) {
+ID3D12Resource* CreateDepthStencilTextureResource(ID3D12Device* device, int32_t width, int32_t height) {
 	//生成するResourceの設定
 	D3D12_RESOURCE_DESC resourceDesc{};
 	resourceDesc.Width = width; //textureの幅
@@ -293,7 +293,9 @@ ID3D12Resource* CreateDepthStenCilTextureResource(ID3D12Device* device, int32_t 
 		IID_PPV_ARGS(&resource)); //作成するResorceポインタへのポインタ
 	assert(SUCCEEDED(hr));
 	return resource;
+
 }
+
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -733,7 +735,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	ID3D12Resource* intermeditateResource = UploadTextureData(textureResource, mipImages, device, commandList);
 
 	//DepthStenCilTextureをウィンドウのサイズで作成
-	ID3D12Resource* depthStencilResource = CreateDepthStenCilTextureResource(device, kClientWidth, kClientHeight);
+	ID3D12Resource* depthStencilResource = CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
 
 	//DSV用のヒープでディスクリプタの数は１
 	ID3D12DescriptorHeap* dsvDescriptorHeap = CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
