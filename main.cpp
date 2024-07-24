@@ -740,6 +740,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//SRVの生成
 	device->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
 
+	////経度分割１つ分の角度φ（ファイ）
+	//const float kLonEvery = pi * 2.0f / float(kSubdivision);
+	////緯度分割１つ分の角度θ（シータ）
+	//const float kLatEvery = pi / float(kSubdivision);
+	////緯度の方向に分割
+	//for (latIndex = 0; lanIndex < kSubdivision; ++latIndex) {
+	//	float lat = -pi / 2.0f + kLatEvery * latIndex;//θ
+	//}
+
 
 	//ImGuiの初期化
 	IMGUI_CHECKVERSION();
