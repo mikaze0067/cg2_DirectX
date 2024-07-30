@@ -719,9 +719,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	ID3D12Resource* transformationMatrixResourceSprite = CreateBufferResource(device, sizeof(Matrix4x4));
 
-	/*Matrix4x4* transformationMatrixDataSprite = nullptr;
-	transformationMatrixResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixDataSprite));
-	*transformationMatrixDataSprite = MakeIdentity4x4();*/
+	
 
 	//metadataを基にSRVの設定
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
@@ -740,14 +738,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//SRVの生成
 	device->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
 
-	////経度分割１つ分の角度φ（ファイ）
-	//const float kLonEvery = pi * 2.0f / float(kSubdivision);
-	////緯度分割１つ分の角度θ（シータ）
-	//const float kLatEvery = pi / float(kSubdivision);
-	////緯度の方向に分割
-	//for (latIndex = 0; lanIndex < kSubdivision; ++latIndex) {
-	//	float lat = -pi / 2.0f + kLatEvery * latIndex;//θ
-	//}
+	
 
 
 	//ImGuiの初期化
