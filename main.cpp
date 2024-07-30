@@ -875,14 +875,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//単位行列を書き込んでおく
 	*transformationMatrixDataSprite = MakeIdentity4x4();
 
-	////経度分割１つ分の角度φ（ファイ）
-	//const float kLonEvery = pi * 2.0f / float(kSubdivision);
-	////緯度分割１つ分の角度θ（シータ）
-	//const float kLatEvery = pi / float(kSubdivision);
-	////緯度の方向に分割
-	//for (latIndex = 0; lanIndex < kSubdivision; ++latIndex) {
-	//	float lat = -pi / 2.0f + kLatEvery * latIndex;//θ
-	//}
+	//経度分割１つ分の角度φ（ファイ）
+	const float kLonEvery = pi * 2.0f / float(kSubdivision);
+	//緯度分割１つ分の角度θ（シータ）
+	const float kLatEvery = pi / float(kSubdivision);
+	//緯度の方向に分割
+	for (latIndex = 0; lanIndex < kSubdivision; ++latIndex) {
+		float lat = -pi / 2.0f + kLatEvery * latIndex;//θ
+	}
 
 
 #pragma region ImGuiの初期化
@@ -1028,6 +1028,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			assert(SUCCEEDED(hr));
 		}
 	}
+	ImGui_ImplDX12_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
 	CloseHandle(fenceEvent);
 	fence->Release();
 	rtvDescriptorHeap->Release();
@@ -1051,6 +1054,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	vertexShaderBlob->Release();
 	materialResource->Release();
 	wvpResource->Release();
+	textureResource->Release();
+	srvDescriptorHeap->Release();
+	intermeditateResource->Release();
+	transformationMatrixResourceSprite->Release();
 
 #ifdef _DEBUG
 	debugController->Release();
@@ -1065,9 +1072,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
 		debug->Release();
 	}
-	ImGui_ImplDX12_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
+	
 	CoUninitialize();
 	return 0;
 }
