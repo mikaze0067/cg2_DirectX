@@ -800,6 +800,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #pragma endregion
 
+#pragma region 05-00球
+
 	const uint32_t kSubdivision = 16;
 
 	ID3D12Resource* vertexResourceSphere = CreateBufferResource(device, sizeof(VertexData) * kSubdivision * kSubdivision * 6);
@@ -819,6 +821,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//緯度分割１つ分の角度θ（シータ）
 	const float kLatEvery = float(M_PI) / float(kSubdivision);
 
+
 	//緯度の方向に分割
 	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
 		float lat = -float(M_PI) / 2.0f + kLatEvery * latIndex;//θ
@@ -827,12 +830,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			uint32_t start = (latIndex * kSubdivision + lonIndex) * 6;
 			float lon = lonIndex * kLonEvery;//φ
 
+
 			VertexData vertA = {
-				   {
-					std::cosf(lat) * std::cosf(lon),
-					std::sinf(lat),
-					std::cosf(lat) * std::sinf(lon),
-					1.0f},{
+				{std::cosf(lat) * std::cosf(lon),
+				std::sinf(lat),
+				std::cosf(lat) * std::sinf(lon),
+				1.0f},{
 				float(lonIndex) / float(kSubdivision),
 				1.0f - float(latIndex) / float(kSubdivision)}
 			};
@@ -841,8 +844,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 				{std::cosf(lat + kLatEvery) * std::cosf(lon),
 				std::sinf(lat + kLatEvery),
 				std::cosf(lat + kLatEvery) * std::sinf(lon),
-			1.0f
-				},{
+				1.0f},{
 				float(lonIndex) / float(kSubdivision),
 				1.0f - float(latIndex + 1) / float(kSubdivision)}
 
@@ -852,19 +854,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 				{std::cosf(lat) * std::cosf(lon + kLonEvery),
 				std::sinf(lat),
 				std::cosf(lat) * std::sinf(lon + kLonEvery),
-				1.0f
-				},{
+				1.0f},{
 				float(lonIndex + 1) / float(kSubdivision),
 				1.0f - float(latIndex) / float(kSubdivision)}
 			};
 
 			VertexData vertD = {
-				{
-					std::cosf(lat + kLatEvery) * std::cosf(lon + kLonEvery),
-					std::sinf(lat + kLatEvery),
-					std::cosf(lat + kLatEvery) * std::sinf(lon + kLonEvery),
-					1.0f
-				},{
+				{std::cosf(lat + kLatEvery) * std::cosf(lon + kLonEvery),
+				std::sinf(lat + kLatEvery),
+				std::cosf(lat + kLatEvery) * std::sinf(lon + kLonEvery),
+				1.0f},{
 				float(lonIndex + 1) / float(kSubdivision),
 				1.0f - float(latIndex + 1) / float(kSubdivision)}
 			};
@@ -878,6 +877,40 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		}
 	}
 
+#pragma endregion
+
+	ID3D12Resource* indexResourceSphere = CreateBufferResource(device, sizeof(uint32_t) * kSubdivision * kSubdivision * 6);
+
+	D3D12_INDEX_BUFFER_VIEW indexBufferViewSphere{};
+	//リソースの先頭アドレスから使う
+	indexBufferViewSphere.BufferLocation = indexResourceSphere->GetGPUVirtualAddress();
+	//使用するリソースのサイズはインデックス6つ分のサイズ
+	indexBufferViewSphere.SizeInBytes = sizeof(uint32_t) * kSubdivision * kSubdivision * 6;
+	//インデックスはuint_32_tとする
+	indexBufferViewSphere.Format = DXGI_FORMAT_R32_UINT;
+
+	//インデックスリソースのにデータを書き込む
+	uint32_t* indexDataSphere = nullptr;
+	indexResourceSphere->Map(0, nullptr, reinterpret_cast<void**>(&indexDataSphere));
+	//緯度の方向に分割
+	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
+		float lat = -float(M_PI) / 2.0f + kLatEvery * latIndex;//θ
+		//緯度の方向に分割しながら線を描く
+		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
+			uint32_t start = (latIndex * kSubdivision + lonIndex) * 6;
+			float lon = lonIndex * kLonEvery;//φ
+			uint32_t current = latIndex * (kSubdivision + 1) + lonIndex;
+			uint32_t next = current + (kSubdivision + 1);
+
+			indexDataSphere[start + 0] = current;
+			indexDataSphere[start + 1] = next+1;
+			indexDataSphere[start + 2] = current+2;
+
+			indexDataSphere[start + 3] = current+1;
+			indexDataSphere[start + 4] = next+3;
+			indexDataSphere[start + 5] = next+2;
+		}
+	}
 
 
 #pragma region SRV (ShaderResourceView)
@@ -946,6 +979,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	*wvpData = MakeIdentity4x4();
 #pragma endregion
 
+#pragma region Sprite用のTransformationMatrix
 
 	//Sprite用のTransformationMatrix用のリソースを作る
 	ID3D12Resource* transformationMatrixResourceSprite = CreateBufferResource(device, sizeof(Matrix4x4));
@@ -956,6 +990,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//単位行列を書き込んでおく
 	*transformationMatrixDataSprite = MakeIdentity4x4();
 
+#pragma endregion
+
+	
 	
 #pragma region ImGuiの初期化
 
@@ -999,7 +1036,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//これから書き込むバックバッファのインデックスを取得
 			UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
-			transform.rotate.y += 0.03f;
+			//transform.rotate.y += 0.03f;
 
 			worldMatrix = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
 
@@ -1041,8 +1078,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			commandList->RSSetScissorRects(1, &scissorRect); //scissorを設定
 			//rootSignatureを設定。PSOに設定しているけど別途設定が必要
 			commandList->SetGraphicsRootSignature(rootSignature);
+
 			commandList->SetPipelineState(graphicsPipelineState); //PSOを設定
+
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSphere); //VBVを設定
+
+			commandList->IASetIndexBuffer(&indexBufferViewSphere); //IBVを設定
 			//形状を設定。PSOに設定しているものとはまた別。同じものを設定すると考えておけば良い
 			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			//マテリアルCBufferの場所を設定
@@ -1052,13 +1093,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//SRVのDescreptorTableの先頭を設定。2はRootParameter[2]である
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 			//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
-			commandList->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
+			//commandList->DrawIndexedInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
+			//描画！（DrawCall/ドローコール）6個のインデックスを使用し1つのインスタンスを描画
+			commandList->DrawIndexedInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0, 0);
 			//Spriteの描画。
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite); //VBVを設定
 			//TransformationMatrixCBuffersの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
 			//描画！（DrawCall/ドローコール）
 			commandList->DrawInstanced(6, 1, 0, 0);
+			
+
 			ImGui::Render();
 
 			
@@ -1134,7 +1179,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	depthStencilResource->Release();
 	vertexResourceSprite->Release();
 	vertexResourceSphere->Release();
-
+	indexResourceSphere->Release();
 
 #ifdef _DEBUG
 	debugController->Release();
