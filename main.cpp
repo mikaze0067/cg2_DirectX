@@ -819,24 +819,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//緯度分割１つ分の角度θ（シータ）
 	const float kLatEvery = float(M_PI) / float(kSubdivision);
 
-	uint32_t start = 0;
 	//緯度の方向に分割
 	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
 		float lat = -float(M_PI) / 2.0f + kLatEvery * latIndex;//θ
 		//緯度の方向に分割しながら線を描く
 		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
-			start = (latIndex * kSubdivision + lonIndex) * 6;
+			uint32_t start = (latIndex * kSubdivision + lonIndex) * 6;
 			float lon = lonIndex * kLonEvery;//φ
 
 			VertexData vertA = {
-				{
+				   {
 					std::cosf(lat) * std::cosf(lon),
 					std::sinf(lat),
 					std::cosf(lat) * std::sinf(lon),
-					1.0f},
-					{
-				float(lonIndex + 1) / float(kSubdivision),
-				1.0f - float(latIndex + 1) / float(kSubdivision)}
+					1.0f},{
+				float(lonIndex) / float(kSubdivision),
+				1.0f - float(latIndex) / float(kSubdivision)}
 			};
 
 			VertexData vertB = {
@@ -844,9 +842,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 				std::sinf(lat + kLatEvery),
 				std::cosf(lat + kLatEvery) * std::sinf(lon),
 			1.0f
-				},
-				{
-				float(lonIndex + 1) / float(kSubdivision),
+				},{
+				float(lonIndex) / float(kSubdivision),
 				1.0f - float(latIndex + 1) / float(kSubdivision)}
 
 			};
@@ -856,10 +853,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 				std::sinf(lat),
 				std::cosf(lat) * std::sinf(lon + kLonEvery),
 				1.0f
-				},
-				{
+				},{
 				float(lonIndex + 1) / float(kSubdivision),
-				1.0f - float(latIndex + 1) / float(kSubdivision)}
+				1.0f - float(latIndex) / float(kSubdivision)}
 			};
 
 			VertexData vertD = {
@@ -881,14 +877,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			vertexDataSphere[start + 5] = vertD;
 		}
 	}
-
-	////頂点データを入力する。基準点a
-	//vertexData[start].position.x = cos(lat) * cos(lon);
-	//vertexData[start].position.y = sin(lat);
-	//vertexData[start].position.z = cos(lat) * sin(lon);
-	//vertexData[start].position.w = 1.0f;
-	//vertexData[start].texcoord.x = float(lonIndex) / float(kSubdivision);
-	//vertexData[start].texcoord.y = 1.0f - float(latIndex) / float(kSubdivision);
 
 
 
@@ -1054,7 +1042,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//rootSignatureを設定。PSOに設定しているけど別途設定が必要
 			commandList->SetGraphicsRootSignature(rootSignature);
 			commandList->SetPipelineState(graphicsPipelineState); //PSOを設定
-			commandList->IASetVertexBuffers(0, 1, &vertexBufferView); //VBVを設定
+			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSphere); //VBVを設定
 			//形状を設定。PSOに設定しているものとはまた別。同じものを設定すると考えておけば良い
 			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			//マテリアルCBufferの場所を設定
@@ -1064,8 +1052,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//SRVのDescreptorTableの先頭を設定。2はRootParameter[2]である
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 			//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
-			//commandList->DrawInstanced(6, 1, 0, 0);
-			commandList->DrawInstanced((kSubdivision * kSubdivision * 6), 1, 0, 0);
+			commandList->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
 			//Spriteの描画。
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite); //VBVを設定
 			//TransformationMatrixCBuffersの場所を設定
