@@ -1130,7 +1130,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	srvDescriptorHeap->Release();
 	intermeditateResource->Release();
 	transformationMatrixResourceSprite->Release();
+	dsvDescriptorHeap->Release();
+	depthStencilResource->Release();
+	vertexResourceSprite->Release();
 	vertexResourceSphere->Release();
+
 
 #ifdef _DEBUG
 	debugController->Release();
@@ -1145,7 +1149,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
 		debug->Release();
 	}
-	
+
 	CoUninitialize();
 	return 0;
 }
