@@ -965,6 +965,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	srvDescriptorHeap->Release();
 	intermeditateResource->Release();
 	transformationMatrixResourceSprite->Release();
+	dsvDescriptorHeap->Release();
+	depthStencilResource->Release();
 
 #ifdef _DEBUG
 	debugController->Release();
