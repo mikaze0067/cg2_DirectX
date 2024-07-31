@@ -8,6 +8,7 @@
 #include <dxgidebug.h>
 #include <dxcapi.h>
 #include <vector>
+#include <corecrt_math_defines.h>
 #include "math/Vector2.h"
 #include "math/Affine.h"
 #include "math/Inverse.h"
@@ -799,6 +800,98 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #pragma endregion
 
+	const uint32_t kSubdivision = 16;
+
+	ID3D12Resource* vertexResourceSphere = CreateBufferResource(device, sizeof(VertexData) * kSubdivision * kSubdivision * 6);
+
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSphere{};
+	vertexBufferViewSphere.BufferLocation = vertexResourceSphere->GetGPUVirtualAddress();
+	vertexBufferViewSphere.SizeInBytes = sizeof(VertexData) * kSubdivision * kSubdivision * 6;
+	vertexBufferViewSphere.StrideInBytes = sizeof(VertexData);
+
+	VertexData* vertexDataSphere = nullptr;
+	vertexResourceSphere->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataSphere));
+
+
+
+	//経度分割１つ分の角度φ（ファイ）
+	const float kLonEvery = float(M_PI) * 2.0f / float(kSubdivision);
+	//緯度分割１つ分の角度θ（シータ）
+	const float kLatEvery = float(M_PI) / float(kSubdivision);
+
+	uint32_t start = 0;
+	//緯度の方向に分割
+	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
+		float lat = -float(M_PI) / 2.0f + kLatEvery * latIndex;//θ
+		//緯度の方向に分割しながら線を描く
+		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
+			start = (latIndex * kSubdivision + lonIndex) * 6;
+			float lon = lonIndex * kLonEvery;//φ
+
+			VertexData vertA = {
+				{
+					std::cosf(lat) * std::cosf(lon),
+					std::sinf(lat),
+					std::cosf(lat) * std::sinf(lon),
+					1.0f},
+					{
+				float(lonIndex + 1) / float(kSubdivision),
+				1.0f - float(latIndex + 1) / float(kSubdivision)}
+			};
+
+			VertexData vertB = {
+				{std::cosf(lat + kLatEvery) * std::cosf(lon),
+				std::sinf(lat + kLatEvery),
+				std::cosf(lat + kLatEvery) * std::sinf(lon),
+			1.0f
+				},
+				{
+				float(lonIndex + 1) / float(kSubdivision),
+				1.0f - float(latIndex + 1) / float(kSubdivision)}
+
+			};
+
+			VertexData vertC = {
+				{std::cosf(lat) * std::cosf(lon + kLonEvery),
+				std::sinf(lat),
+				std::cosf(lat) * std::sinf(lon + kLonEvery),
+				1.0f
+				},
+				{
+				float(lonIndex + 1) / float(kSubdivision),
+				1.0f - float(latIndex + 1) / float(kSubdivision)}
+			};
+
+			VertexData vertD = {
+				{
+					std::cosf(lat + kLatEvery) * std::cosf(lon + kLonEvery),
+					std::sinf(lat + kLatEvery),
+					std::cosf(lat + kLatEvery) * std::sinf(lon + kLonEvery),
+					1.0f
+				},{
+				float(lonIndex + 1) / float(kSubdivision),
+				1.0f - float(latIndex + 1) / float(kSubdivision)}
+			};
+
+			vertexDataSphere[start + 0] = vertA;
+			vertexDataSphere[start + 1] = vertB;
+			vertexDataSphere[start + 2] = vertC;
+			vertexDataSphere[start + 3] = vertC;
+			vertexDataSphere[start + 4] = vertB;
+			vertexDataSphere[start + 5] = vertD;
+		}
+	}
+
+	////頂点データを入力する。基準点a
+	//vertexData[start].position.x = cos(lat) * cos(lon);
+	//vertexData[start].position.y = sin(lat);
+	//vertexData[start].position.z = cos(lat) * sin(lon);
+	//vertexData[start].position.w = 1.0f;
+	//vertexData[start].texcoord.x = float(lonIndex) / float(kSubdivision);
+	//vertexData[start].texcoord.y = 1.0f - float(latIndex) / float(kSubdivision);
+
+
+
 #pragma region SRV (ShaderResourceView)
 
 	//metadataを基にSRVの設定
@@ -875,16 +968,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//単位行列を書き込んでおく
 	*transformationMatrixDataSprite = MakeIdentity4x4();
 
-	//経度分割１つ分の角度φ（ファイ）
-	const float kLonEvery = pi * 2.0f / float(kSubdivision);
-	//緯度分割１つ分の角度θ（シータ）
-	const float kLatEvery = pi / float(kSubdivision);
-	//緯度の方向に分割
-	for (latIndex = 0; lanIndex < kSubdivision; ++latIndex) {
-		float lat = -pi / 2.0f + kLatEvery * latIndex;//θ
-	}
-
-
+	
 #pragma region ImGuiの初期化
 
 	//ImGuiの初期化
@@ -980,7 +1064,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//SRVのDescreptorTableの先頭を設定。2はRootParameter[2]である
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 			//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
-			commandList->DrawInstanced(6, 1, 0, 0);
+			//commandList->DrawInstanced(6, 1, 0, 0);
+			commandList->DrawInstanced((kSubdivision * kSubdivision * 6), 1, 0, 0);
 			//Spriteの描画。
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite); //VBVを設定
 			//TransformationMatrixCBuffersの場所を設定
@@ -1058,6 +1143,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	srvDescriptorHeap->Release();
 	intermeditateResource->Release();
 	transformationMatrixResourceSprite->Release();
+	vertexResourceSphere->Release();
 
 #ifdef _DEBUG
 	debugController->Release();
