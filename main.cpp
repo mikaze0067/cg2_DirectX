@@ -44,7 +44,7 @@ const int32_t kClientHeight = 720;
 
 Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f } };
 
-Transform cameratransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-10.0f} };
+Transform cameratransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,10.0f} };
 
 Transform transformSprite{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f } };
 
@@ -55,7 +55,7 @@ Matrix4x4 cameraMatrix = MakeAffineMatrix(cameratransform.scale, cameratransform
 
 Matrix4x4 viewMatrix = Inverse(cameraMatrix);
 
-Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
+Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.5f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
 
 Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
 
@@ -917,12 +917,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
 			//ImGui::ShowDemoWindow();
-			ImGui::SetNextWindowSize(ImVec2(200, 300));
+			ImGui::SetNextWindowSize(ImVec2(300, 300));
 			ImGui::Begin("Window");
 			ImGui::ColorEdit3("RGB", &materialData->x);
 			ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f);
 			ImGui::DragFloat3("Rotate", &transform.rotate.x, 0.01f);
 			ImGui::DragFloat3("Translate", &transform.translate.x, 0.01f);
+			
+
 			ImGui::End();
 			//これから書き込むバックバッファのインデックスを取得
 			UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
