@@ -879,36 +879,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #pragma endregion
 
-	ID3D12Resource* indexResourceSphere = CreateBufferResource(device, sizeof(uint32_t) * kSubdivision * kSubdivision * 6);
+	ID3D12Resource* indexResourceSprite = CreateBufferResource(device, sizeof(uint32_t) * kSubdivision * kSubdivision * 6);
 
-	D3D12_INDEX_BUFFER_VIEW indexBufferViewSphere{};
+	D3D12_INDEX_BUFFER_VIEW indexBufferViewSprite{};
 	//リソースの先頭アドレスから使う
-	indexBufferViewSphere.BufferLocation = indexResourceSphere->GetGPUVirtualAddress();
+	indexBufferViewSprite.BufferLocation = indexResourceSprite->GetGPUVirtualAddress();
 	//使用するリソースのサイズはインデックス6つ分のサイズ
-	indexBufferViewSphere.SizeInBytes = sizeof(uint32_t) * kSubdivision * kSubdivision * 6;
+	indexBufferViewSprite.SizeInBytes = sizeof(uint32_t) * kSubdivision * kSubdivision * 6;
 	//インデックスはuint_32_tとする
-	indexBufferViewSphere.Format = DXGI_FORMAT_R32_UINT;
+	indexBufferViewSprite.Format = DXGI_FORMAT_R32_UINT;
 
 	//インデックスリソースのにデータを書き込む
-	uint32_t* indexDataSphere = nullptr;
-	indexResourceSphere->Map(0, nullptr, reinterpret_cast<void**>(&indexDataSphere));
+	uint32_t* indexDataSprite = nullptr;
+	indexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&indexDataSprite));
 	//緯度の方向に分割
 	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
 		float lat = -float(M_PI) / 2.0f + kLatEvery * latIndex;//θ
 		//緯度の方向に分割しながら線を描く
 		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
-			uint32_t start = (latIndex * kSubdivision + lonIndex) * 6;
-			float lon = lonIndex * kLonEvery;//φ
-			uint32_t current = latIndex * (kSubdivision + 1) + lonIndex;
-			uint32_t next = current + (kSubdivision + 1);
-
-			indexDataSphere[start + 0] = current;
-			indexDataSphere[start + 1] = next+1;
-			indexDataSphere[start + 2] = current+2;
-
-			indexDataSphere[start + 3] = current+1;
-			indexDataSphere[start + 4] = next+3;
-			indexDataSphere[start + 5] = next+2;
+			uint32_t* indexDataSprite = nullptr;
+			indexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&indexDataSprite));
+			indexDataSprite[0] = 0;  indexDataSprite[1] = 1;  indexDataSprite[2] = 2;
+			indexDataSprite[3] = 1;  indexDataSprite[4] = 3;  indexDataSprite[5] = 2;
 		}
 	}
 
@@ -1036,7 +1028,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//これから書き込むバックバッファのインデックスを取得
 			UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
-			//transform.rotate.y += 0.03f;
+			transform.rotate.y += 0.03f;
 
 			worldMatrix = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
 
@@ -1081,9 +1073,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 			commandList->SetPipelineState(graphicsPipelineState); //PSOを設定
 
-			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSphere); //VBVを設定
+			commandList->IASetVertexBuffers(0, 1, &vertexBufferView); //VBVを設定
 
-			commandList->IASetIndexBuffer(&indexBufferViewSphere); //IBVを設定
+			commandList->IASetIndexBuffer(&indexBufferViewSprite); //IBVを設定
 			//形状を設定。PSOに設定しているものとはまた別。同じものを設定すると考えておけば良い
 			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			//マテリアルCBufferの場所を設定
@@ -1095,7 +1087,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
 			//commandList->DrawIndexedInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
 			//描画！（DrawCall/ドローコール）6個のインデックスを使用し1つのインスタンスを描画
-			commandList->DrawIndexedInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0, 0);
+			commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 			//Spriteの描画。
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite); //VBVを設定
 			//TransformationMatrixCBuffersの場所を設定
@@ -1179,7 +1171,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	depthStencilResource->Release();
 	vertexResourceSprite->Release();
 	vertexResourceSphere->Release();
-	indexResourceSphere->Release();
+	indexResourceSprite->Release();
 
 #ifdef _DEBUG
 	debugController->Release();
