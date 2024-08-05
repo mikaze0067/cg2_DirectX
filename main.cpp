@@ -9,6 +9,8 @@
 #include <dxcapi.h>
 #include <vector>
 #include <corecrt_math_defines.h>
+#include<fstream>
+#include<sstream>
 #include "math/Vector2.h"
 #include "math/Affine.h"
 #include "math/Inverse.h"
@@ -31,6 +33,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 struct VertexData {
 	Vector4 position;
 	Vector2 texcoord;
+	Vector3 normal;
 };
 
 struct Transform
@@ -38,6 +41,15 @@ struct Transform
 	Vector3 scale;
 	Vector3 rotate;
 	Vector3 translate;
+};
+
+struct MaterialData {
+	std::string textureFilePath;
+};
+
+struct ModelData {
+	std::vector<VertexData>vertices;
+	MaterialData material;
 };
 
 const int32_t kClientWidth = 1280;
@@ -310,6 +322,105 @@ ID3D12Resource* CreateDepthStencilTextureResource(ID3D12Device* device, int32_t 
 	assert(SUCCEEDED(hr));
 	return resource;
 }
+
+//06_02 p28
+MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename) {
+	MaterialData materialData;//構築するMaterialData
+	std::string line;
+	std::ifstream file(directoryPath + "/" + filename);
+	assert(file.is_open());
+
+	while (std::getline(file, line)) {
+		std::string identifier;
+		std::istringstream s(line);
+		s >> identifier;
+
+		//identifer
+		if (identifier == "map_Kd") {
+			std::string textureFilename;
+			s >> textureFilename;
+			//連結してファイルパスにする
+			materialData.textureFilePath = directoryPath + "/" + textureFilename;
+		}
+	}
+	return materialData;
+}
+
+
+ModelData LoadObjFile(const std::string& directoryPath, const std::string& filename) {
+	ModelData modelData; //構築するModelData
+	std::vector<Vector4>positions; //位置
+	std::vector<Vector3>normals; //法線
+	std::vector<Vector2>texcoords; //テクスチャ座標
+	std::string line; //ファイルから読んだ１行を格納するもの
+
+	std::ifstream file(directoryPath + "/" + filename); //ファイルを開く
+	assert(file.is_open());//とりあえず開けなかったら止める
+
+	while (std::getline(file, line)) {
+		std::string identifier;
+		std::istringstream s(line);
+		s >> identifier;
+
+		if (identifier == "v") {
+			Vector4 position;
+			s >> position.x >> position.y >> position.z;
+			position.w = 1.0f;
+			positions.push_back(position);
+		}
+		else if (identifier == "vt") {
+			Vector2 texcoord;
+			s >> texcoord.x >> texcoord.y;
+			texcoords.push_back(texcoord);
+		}
+		else if (identifier == "vn") {
+			Vector3 normal;
+			s >> normal.x >> normal.y >> normal.z;
+			normals.push_back(normal);
+		}
+		else if (identifier == "f") {
+			VertexData triangle[3];
+			//面は三角形限定。その他は未対応
+			for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
+				std::string vertexDefinition;
+				s >> vertexDefinition;
+				//頂点の要素へのIndexは「位置 / UV / 法線」で格納されているので、分解してIndexを取得する
+				std::istringstream v(vertexDefinition);
+				uint32_t elementIndices[3];
+				for (int32_t element = 0; element < 3; ++element) {
+					std::string index;
+					std::getline(v, index, '/');///区切りでインデックスを読んでいく	
+					elementIndices[element] = std::stoi(index);
+				}
+				//要素のIndexから、実際の要素の値を取得して、頂点を構築する
+				Vector4 position = positions[elementIndices[0] - 1];
+				Vector2 texcoord = texcoords[elementIndices[1] - 1];
+				Vector3 normal = normals[elementIndices[2] - 1];
+
+				position.x *= 1.0f;
+				normal.x *= -1.0f;
+				texcoord.y = 1.0f - texcoord.y;
+
+				triangle[faceVertex] = { position,texcoord,normal };
+			}
+			//頂点を逆順で登録することで、回り順を逆にする 06_02_p23
+			modelData.vertices.push_back(triangle[2]);
+			modelData.vertices.push_back(triangle[1]);
+			modelData.vertices.push_back(triangle[0]);
+		}
+		else if (identifier == "mtllib") {
+			//
+			std::string materialFilename;
+			s >> materialFilename;
+			//
+			modelData.material = LoadMaterialTemplateFile(directoryPath, materialFilename);
+		}
+	}
+	return modelData;
+}
+
+
+
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -694,6 +805,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #pragma endregion 
 
+	//モデル読み込み
+	ModelData modelData = LoadObjFile("Resource", "plane.obj");
+
 #pragma region VertexResourceの生成
 
 	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * 6);
@@ -706,8 +820,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
 	//リソースの先頭のアドレスから使う
 	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
-	//使用するリソースのサイズは頂点3つ分のサイズ
-	vertexBufferView.SizeInBytes = sizeof(VertexData) * 6;
+	//使用するリソースのサイズは頂点3つ分のサイズ//6-2変更点
+	vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size());
 	//1頂点あたりのサイズ
 	vertexBufferView.StrideInBytes = sizeof(VertexData);
 
@@ -774,8 +888,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite{};
 	//リソースの先頭のアドレスから使う
 	vertexBufferViewSprite.BufferLocation = vertexResourceSprite->GetGPUVirtualAddress();
-	//使用するリソースのサイズは頂点3つ分のサイズ
-	vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 6;
+	//使用するリソースのサイズは頂点3つ分のサイズ//6-2変更点
+	vertexBufferViewSprite.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size());
 	//1頂点あたりのサイズ
 	vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
 #pragma endregion
@@ -984,7 +1098,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #pragma endregion
 
-	
+	DirectX::ScratchImage mipImages2 = LoadTexture(modelData.material.textureFilePath);
 	
 #pragma region ImGuiの初期化
 
@@ -1019,12 +1133,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			ImGui::NewFrame();
 			//ImGui::ShowDemoWindow();
 			ImGui::SetNextWindowSize(ImVec2(200, 300));
-			ImGui::Begin("Window");
+			ImGui::Begin("Model");
 			ImGui::ColorEdit3("RGB", &materialData->x);
 			ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f);
 			ImGui::DragFloat3("Rotate", &transform.rotate.x, 0.01f);
 			ImGui::DragFloat3("Translate", &transform.translate.x, 0.01f);
+
+			//色変え
+			ImGui::ColorEdit3("color", &materialData->x);
 			ImGui::End();
+
+			ImGui::Begin("Window");
+			ImGui::DragFloat3("spriteColor", &materialData->x, 0.01f);
+
+			ImGui::DragFloat3("spriteScale", &transformSprite.scale.x, 0.01f);
+			ImGui::DragFloat3("spriteRotate", &transformSprite.rotate.x, 0.01f);
+			ImGui::DragFloat3("spriteTranslate", &transformSprite.translate.x, 0.01f);
+			//色変え
+			ImGui::ColorEdit3("spriteColor", &materialData->x);
+			ImGui::End();
+
 			//これから書き込むバックバッファのインデックスを取得
 			UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
@@ -1094,11 +1222,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
 			//描画！（DrawCall/ドローコール）
 			commandList->DrawInstanced(6, 1, 0, 0);
-			
+
+			//06_02 p17
+			commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 
 			ImGui::Render();
 
-			
 			//
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 
