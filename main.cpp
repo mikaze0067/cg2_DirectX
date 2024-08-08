@@ -442,7 +442,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	}
 #endif
 
-
 #pragma region DXGIファクトリーの作成
 	//DXGIファクトリーの生成
 	dxgiFactory = nullptr;
