@@ -616,9 +616,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; //PixelShaderで使う
 	rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRange;//Tableの中身の配列を指定
 	rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);//Tableで利用する数
-	rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters[3].Descriptor.ShaderRegister = 1;
+	rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;     //CBVを使う
+	rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;  //PixelShaderで使う
+	rootParameters[3].Descriptor.ShaderRegister = 1;                     //レジスタ番号1を使う
 
 	descriptionRootSignature.pParameters = rootParameters;              //ルートパラメータ配列へのポインタ
 	descriptionRootSignature.NumParameters = _countof(rootParameters);  //配列の長さ
@@ -1062,12 +1062,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #pragma endregion
 
-#pragma region 
+#pragma region sprite用のマテリアルリソースを作る
 	ID3D12Resource* materialResourceSprite = CreateBufferResource(device, sizeof(Material));
 
 	Material* materialDataSprite = nullptr;
 	materialResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&materialDataSprite));
 	materialDataSprite->color = { 1.0f,1.0f,1.0f,1.0f };
+	//Lightingを有効にする
 	materialDataSprite->enableLighting = true;
 
 	ID3D12Resource* windowResourceSprite = CreateBufferResource(device, sizeof(Material));
@@ -1094,6 +1095,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	DirectionaLight* directionalLightData = nullptr;
 	directionalLightResource->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData));
+	//デフォルト値はとりあえず以下のようにしておく
 	directionalLightData->color = { 1.0f,1.0f,1.0f,1.0f };
 	directionalLightData->direction = { 0.0f,-1.0f,0.0f };
 	directionalLightData->intensity = 1.0f;
@@ -1199,8 +1201,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//形状を設定。PSOに設定しているものとはまた別。同じものを設定すると考えておけば良い
 			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			//マテリアルCBufferの場所を設定
-			commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
-			//スプライトのマテリアルCBufferの場所を指定
+			//commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());変更
 			commandList->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
 			//wvp用のCBufferの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
