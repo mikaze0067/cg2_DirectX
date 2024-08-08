@@ -1145,7 +1145,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 			ImGui::Begin("Window");
 			ImGui::DragFloat3("spriteColor", &materialData->x, 0.01f);
-
 			ImGui::DragFloat3("spriteScale", &transformSprite.scale.x, 0.01f);
 			ImGui::DragFloat3("spriteRotate", &transformSprite.rotate.x, 0.01f);
 			ImGui::DragFloat3("spriteTranslate", &transformSprite.translate.x, 0.01f);
