@@ -985,7 +985,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 #pragma endregion
 
 	
-	
 #pragma region ImGuiの初期化
 
 	//ImGuiの初期化
