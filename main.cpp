@@ -43,7 +43,16 @@ struct Transform{
 struct Material{
 	Vector4  color;
 	int32_t enableLighting;
+	float padding[3];
+	Matrix4x4 uvTransform;
 };
+
+Transform uvTransformSprite{
+	{1.0f,1.0f,1.0f},
+	{0.0f,0.0f,0.0f},
+	{0.0f,0.0f,0.0f},
+};
+
 
 struct TransformatioMatrix{
 	Matrix4x4 WVP;
@@ -1070,6 +1079,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	materialDataSprite->color = { 1.0f,1.0f,1.0f,1.0f };
 	//Lightingを有効にする
 	materialDataSprite->enableLighting = true;
+	materialDataSprite->uvTransform = MakeIdentity4x4();
 
 	ID3D12Resource* windowResourceSprite = CreateBufferResource(device, sizeof(Material));
 
@@ -1077,6 +1087,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	windowResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&windowDataSprite));
 	windowDataSprite->color = { 1.0f,1.0f,1.0f,1.0f };
 	windowDataSprite->enableLighting = false;
+	windowDataSprite->uvTransform = MakeIdentity4x4();
+#pragma endregion
 
 
 #pragma region Sprite用のTransformationMatrix
@@ -1154,14 +1166,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			ImGui::NewFrame();
 			//ImGui::ShowDemoWindow();
 			ImGui::Begin("Window");
+
 			ImGui::ColorEdit3("RGB", &materialData->x);
 			ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f);
 			ImGui::DragFloat3("Rotate", &transform.rotate.x, 0.01f);
 			ImGui::DragFloat3("Translate", &transform.translate.x, 0.01f);
+
 			ImGui::Checkbox("useMonsterBall", &useMonsterBall);
+			
 			ImGui::DragFloat4("Light color", &directionalLightData->color.x, 0.01f);
 			ImGui::DragFloat3("Light Direction", &directionalLightData->direction.x, 0.01f);
 			ImGui::DragFloat("Light Intensity", &directionalLightData->intensity, 0.01f);
+
+			ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+			ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+			ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
+
 			ImGui::End();
 
 			//これから書き込むバックバッファのインデックスを取得
@@ -1183,6 +1203,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 			transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
 			transformationMatrixDataSprite->World = worldMatrixSprite;
+
+			//UVTransform用の行列
+			Matrix4x4 uvTransformMatrix = MakeScaleMatrix(uvTransformSprite.scale);
+			uvTransformMatrix = Multiply(uvTransformMatrix, MakeRotateZMatrix(uvTransformSprite.rotate.z));
+			uvTransformMatrix = Multiply(uvTransformMatrix, MakeTranslateMatrix(uvTransformSprite.translate));
+			windowDataSprite->uvTransform = uvTransformMatrix;
+
 
 			//TransitionBarrierの設定
 			D3D12_RESOURCE_BARRIER barrier{};
@@ -1334,6 +1361,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	windowResourceSprite->Release();
 	materialResourceSprite->Release();
 	directionalLightResource->Release();
+	indexResourceSprite->Release();
 
 #ifdef _DEBUG
 	debugController->Release();
