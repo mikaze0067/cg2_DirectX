@@ -1101,6 +1101,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	directionalLightData->intensity = 1.0f;
 #pragma endregion
 	
+#pragma region index用
+
+	ID3D12Resource* indexResourceSprite = CreateBufferResource(device, sizeof(uint32_t) * kSubdivision * kSubdivision * 6);
+
+	D3D12_INDEX_BUFFER_VIEW indexBufferViewSprite{};
+	//リソースの先頭アドレスから使う
+	indexBufferViewSprite.BufferLocation = indexResourceSprite->GetGPUVirtualAddress();
+	//使用するリソースのサイズはインデックス6つ分のサイズ
+	indexBufferViewSprite.SizeInBytes = sizeof(uint32_t) * kSubdivision * kSubdivision * 6;
+	//インデックスはuint_32_tとする
+	indexBufferViewSprite.Format = DXGI_FORMAT_R32_UINT;
+	
+	//インデックスリソースのにデータを書き込む
+	uint32_t* indexDataSprite = nullptr;
+	indexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&indexDataSprite));
+	indexDataSprite[0] = 0;  indexDataSprite[1] = 1;  indexDataSprite[2] = 2;
+	indexDataSprite[3] = 1;  indexDataSprite[4] = 3;  indexDataSprite[5] = 2;
+#pragma endregion
+
+	
 #pragma region ImGuiの初期化
 
 	//ImGuiの初期化
@@ -1194,14 +1214,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 			commandList->RSSetViewports(1, &viewport); //viewportを設定
 			commandList->RSSetScissorRects(1, &scissorRect); //scissorを設定
+
 			//rootSignatureを設定。PSOに設定しているけど別途設定が必要
 			commandList->SetGraphicsRootSignature(rootSignature);
-			commandList->SetPipelineState(graphicsPipelineState); //PSOを設定
-			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSphere); //VBVを設定
+			//PSOを設定
+			commandList->SetPipelineState(graphicsPipelineState);
+			//VBVを設定
+			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSphere);
+			//IBVを設定
+			commandList->IASetIndexBuffer(&indexBufferViewSprite);
+
+
 			//形状を設定。PSOに設定しているものとはまた別。同じものを設定すると考えておけば良い
 			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			//マテリアルCBufferの場所を設定
-			//commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());変更
+			commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
+			//マテリアルスプライトCBufferの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
 			//wvp用のCBufferの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
@@ -1211,6 +1239,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			commandList->SetGraphicsRootDescriptorTable(2, useMonsterBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 			//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
 			commandList->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
+
 			//
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 			//Spriteの描画。
@@ -1219,11 +1248,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
 			//
 			commandList->SetGraphicsRootConstantBufferView(0, windowResourceSprite->GetGPUVirtualAddress());
-
 			//描画！（DrawCall/ドローコール）
 			commandList->DrawInstanced(6, 1, 0, 0);
-			ImGui::Render();
 
+			//描画！（DrawCall/ドローコール）6個のインデックスを使用し1つのインスタンスを描画
+			commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+
+
+			ImGui::Render();
 			
 			//
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
