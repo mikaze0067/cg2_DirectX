@@ -66,6 +66,21 @@ struct  DirectionaLight{
 	float intensity;
 };
 
+//class ResourceObject {
+//public:
+//	ResourceObject(Microsoft::WRL::ComPtr <ID3D12Resource> resource)
+//		:resource_(resource)
+//	{}
+//	~ResourceObject() {
+//		if (resource_) {
+//			resource_->Release();
+//		}
+//	}
+//	Microsoft::WRL::ComPtr <ID3D12Resource> Get() { return resource_; }
+//private:
+//	Microsoft::WRL::ComPtr <ID3D12Resource> resource_;
+//};
+
 const int32_t kClientWidth = 1280;
 const int32_t kClientHeight = 720;
 
@@ -144,7 +159,8 @@ std::string ConvertString(const std::wstring& str) {
 	return result;
 }
 
-IDxcBlob* CompileShader(
+Microsoft::WRL::ComPtr <IDxcBlob>
+CompileShader(
 	const std::wstring& filePath,
 	const wchar_t* profile,
 	IDxcUtils* dxcUtils,
@@ -154,7 +170,7 @@ IDxcBlob* CompileShader(
 	//これからシェーダーをコンパイルする旨をログに出す
 	Log(ConvertString(std::format(L"Begin CompilerShader, path:{}, profile:{}\n", filePath, profile)));
 	//hlslファイルを読む
-	IDxcBlobEncoding* shaderSource = nullptr;
+	Microsoft::WRL::ComPtr <IDxcBlobEncoding> shaderSource = nullptr;
 	HRESULT hr = dxcUtils->LoadFile(filePath.c_str(), nullptr, &shaderSource);
 	//読めなかったら止める
 	assert(SUCCEEDED(hr));
@@ -173,7 +189,7 @@ IDxcBlob* CompileShader(
 		L"-Zpr"  //メモリレイアウトは行優先
 	};
 	//実際にShaderをコンパイルする
-	IDxcResult* shaderResult = nullptr;
+	Microsoft::WRL::ComPtr <IDxcResult> shaderResult = nullptr;
 	hr = dxcCompiler->Compile(
 		&shaderSourceBuffer,  // 読み込んだファイル
 		arguments,         //コンパイルオプション
@@ -185,7 +201,7 @@ IDxcBlob* CompileShader(
 	assert(SUCCEEDED(hr));
 
 	//警告・エラーが出たらログに出して止める
-	IDxcBlobUtf8* shaderError = nullptr;
+	Microsoft::WRL::ComPtr <IDxcBlobUtf8> shaderError = nullptr;
 	shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
 	if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
 		Log(shaderError->GetStringPointer());
@@ -193,7 +209,7 @@ IDxcBlob* CompileShader(
 		assert(false);
 	}
 	//コンパイル結果から実行用のバイナリ部分を取得
-	IDxcBlob* shaderBlob = nullptr;
+	Microsoft::WRL::ComPtr <IDxcBlob> shaderBlob = nullptr;
 	hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
 	assert(SUCCEEDED(hr));
 	//成功したログを出す
@@ -296,7 +312,7 @@ UploadTextureData(Microsoft::WRL::ComPtr <ID3D12Resource> texture, const DirectX
 	DirectX::PrepareUpload(device.Get(), mipImages.GetImages(), mipImages.GetImageCount(), mipImages.GetMetadata(), subresources);
 	uint64_t intermediateSize = GetRequiredIntermediateSize(texture.Get(), 0, UINT(subresources.size()));
 	Microsoft::WRL::ComPtr <ID3D12Resource> intermediateResource = CreateBufferResource(device, intermediateSize);
-	UpdateSubresources<1>(commandList.Get(), texture.Get(), intermediateResource.Get(), 0, 0, static_cast<UINT>(subresources.size()), subresources.data());
+	UpdateSubresources(commandList.Get(), texture.Get(), intermediateResource.Get(), 0, 0, static_cast<UINT>(subresources.size()), subresources.data());
 	//Textureへの転送後は利用できるよう、D3D12_RESOURCE_STATE_COPY_DESTからD3D12_RESOURCE_STATE_GENERIC_READへResourceStateを変更
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -355,22 +371,6 @@ D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(Microsoft::WRL::ComPtr <ID3D1
 	return handleGPU;
 }
 
-class ResourceObject{
-public:
-ResourceObject(Microsoft::WRL::ComPtr <ID3D12Resource> resource)
-	:resource_(resource)
-{}
-~ResourceObject() {
-	if (resource_) {
-		resource_->Release();
-	}
-}
-
-Microsoft::WRL::ComPtr <ID3D12Resource> Get() { return resource_; }
-private:
-	Microsoft::WRL::ComPtr <ID3D12Resource> resource_;
-};
-
 struct D3DResourceLeakChecker {
 	~D3DResourceLeakChecker() {
 		//リソースリークチェック
@@ -387,8 +387,11 @@ bool useMonsterBall = true;
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
-	CoInitializeEx(0, COINIT_MULTITHREADED);
 	D3DResourceLeakChecker leakCheck;
+
+	CoInitializeEx(0, COINIT_MULTITHREADED);
+
+	
 	//DXGIファクトリーの生成
 	Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory;
 
@@ -686,8 +689,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
 
 	//シリアライズしてバイナリにする
-	ID3DBlob* signatureBlob = nullptr;
-	ID3DBlob* errorBlob = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
+	Microsoft::WRL::ComPtr <ID3DBlob> errorBlob = nullptr;
 	hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
 	if (FAILED(hr)) {
 		Log(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
@@ -740,10 +743,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #pragma region Shaderのコンパイル
 	//Shaderをコンパイルする
-	IDxcBlob* vertexShaderBlob = CompileShader(L"Object3D.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
+	Microsoft::WRL::ComPtr <IDxcBlob> vertexShaderBlob = CompileShader(L"Object3D.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
 	assert(vertexShaderBlob != nullptr);
 
-	IDxcBlob* pixelShaderBlob = CompileShader(L"Object3D.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
+	Microsoft::WRL::ComPtr <IDxcBlob> pixelShaderBlob = CompileShader(L"Object3D.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
 	assert(pixelShaderBlob != nullptr);
 
 #pragma endregion
@@ -1366,46 +1369,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 	CloseHandle(fenceEvent);
-	fence->Release();
-	rtvDescriptorHeap->Release();
-	swapChainResources[0]->Release();
-	swapChainResources[1]->Release();
-	swapChain->Release();
-	commandList->Release();
-	commandAllocator->Release();
-	commandQueue->Release();
-	device->Release();
-	useAdapter->Release();
-	dxgiFactory->Release();
-	vertexResource->Release();
-	graphicsPipelineState->Release();
-	signatureBlob->Release();
-	if (errorBlob) {
-		errorBlob->Release();
-	}
-	rootSignature->Release();
-	pixelShaderBlob->Release();
-	vertexShaderBlob->Release();
-	materialResource->Release();
-	wvpResource->Release();
-	textureResource->Release();
-	textureResource2->Release();//2個め
-	srvDescriptorHeap->Release();
-	intermeditateResource->Release();
-	intermeditateResource2->Release();//2個め
-	transformationMatrixResourceSprite->Release();
-	dsvDescriptorHeap->Release();
-	depthStencilResource->Release();
-	vertexResourceSprite->Release();
-	vertexResourceSphere->Release();
-	windowResourceSprite->Release();
-	materialResourceSprite->Release();
-	directionalLightResource->Release();
-	indexResourceSprite->Release();
 	
 	CloseWindow(hwnd);
-
-	
 
 	CoUninitialize();
 	return 0;
