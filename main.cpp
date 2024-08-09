@@ -64,15 +64,6 @@ Transform cameratransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-10.0f} 
 Transform transformSprite{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f } };
 
 
-Matrix4x4 worldMatrix = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
-
-Matrix4x4 cameraMatrix = MakeAffineMatrix(cameratransform.scale, cameratransform.rotate, cameratransform.translate);
-
-Matrix4x4 viewMatrix = Inverse(cameraMatrix);
-
-Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
-
-Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
 
 //Sprite用のWorldViewProjectionMatrixを作る
 Matrix4x4 worldMatrixSprite = MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
@@ -248,12 +239,12 @@ DirectX::ScratchImage LoadTexture(const std::string& filePath) {
 ID3D12Resource* CreateTextureResource(ID3D12Device* device, const DirectX::TexMetadata& metadata) {
 	//metadataを基にResourceの設定
 	D3D12_RESOURCE_DESC resourceDesc{};
-	resourceDesc.Width = UINT(metadata.width);          //Textureの幅
-	resourceDesc.Height = UINT(metadata.height);        //Textureの高さ
+	resourceDesc.Width = UINT(metadata.width);   //Textureの幅
+	resourceDesc.Height = UINT(metadata.height); //Textureの高さ
 	resourceDesc.MipLevels = UINT16(metadata.mipLevels);//mipmapの数
 	resourceDesc.DepthOrArraySize = UINT16(metadata.arraySize);//奥行 or 配列Textureの配列数
-	resourceDesc.Format = metadata.format;              //TextureのFormat
-	resourceDesc.SampleDesc.Count = 1;                  //サンプリングカウント。1固定
+	resourceDesc.Format = metadata.format; //TextureのFormat
+	resourceDesc.SampleDesc.Count = 1;  //サンプリングカウント。1固定
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION(metadata.dimension);//Textureの次元数
 	//利用するHeapの設定。非常にに特殊な運用
 	D3D12_HEAP_PROPERTIES heapProperties{};
@@ -438,6 +429,8 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
 
 
 bool useMonsterBall = true;
+
+
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -829,22 +822,32 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #pragma region VertexResourceの生成
 
-	//ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * 6);
+	// モデル読み込み
+	ModelData modelData = LoadObjFile("Resource", "axis.obj");
+
+	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * 6 * modelData.vertices.size());
 
 #pragma endregion
 
 #pragma region VertexBufferViewを作成
 
-	////頂点バッファビューを作成
-	//D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
-	////リソースの先頭のアドレスから使う
-	//vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
-	////使用するリソースのサイズは頂点3つ分のサイズ
-	//vertexBufferView.SizeInBytes = sizeof(VertexData) * 6;
-	////1頂点あたりのサイズ
-	//vertexBufferView.StrideInBytes = sizeof(VertexData);
+	//頂点バッファビューを作成
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
+	//リソースの先頭のアドレスから使う
+	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
+	//使用するリソースのサイズは頂点3つ分のサイズ
+	vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * 6 * modelData.vertices.size());
+	//1頂点あたりのサイズ
+	vertexBufferView.StrideInBytes = sizeof(VertexData);
 
 #pragma endregion
+	DirectX::ScratchImage mipImages2 = LoadTexture(modelData.material.textureFilePath);
+	// 頂点リソースにデータを書き込む
+	VertexData* vertexData = nullptr;
+	// 書き込むためのアドレスを取得
+	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+	std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData)* modelData.vertices.size()); // 頂点データをリソースにコピー
+
 
 #pragma region 頂点リソース
 
@@ -1019,25 +1022,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		}
 	}
 
-	// モデル読み込み
-	ModelData modelData = LoadObjFile("Resource", "plane.obj");
-	DirectX::ScratchImage mipImages2 = LoadTexture(modelData.material.textureFilePath);
-	// 実際に頂点リソースを作る
-	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * modelData.vertices.size());
-	// 頂点バッファビューを作成する
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
-	// リソースの先頭のアドレスから使う
-	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress(); // リソースの先頭のアドレスから使う
-	// 使用するリソースのサイズは頂点3つ分のサイズ
-	vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size());
-	// 1頂点当たりのサイズ
-	vertexBufferView.StrideInBytes = sizeof(VertexData); // 1頂点当たりのサイズ
-	// 頂点リソースにデータを書き込む
-	VertexData* vertexData = nullptr;
-	// 書き込むためのアドレスを取得
-	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-	std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size()); // 頂点データをリソースにコピー
-
 #pragma region SRV (ShaderResourceView)
 
 	//metadataを基にSRVの設定
@@ -1181,10 +1165,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 			//transform.rotate.y += 0.03f;
 
-			worldMatrix = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
-
-			worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
-
+			Matrix4x4 worldMatrix = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
+			Matrix4x4 cameraMatrix = MakeAffineMatrix(cameratransform.scale, cameratransform.rotate, cameratransform.translate);
+			Matrix4x4 viewMatrix = Inverse(cameraMatrix);
+			Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
+			Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
 			*wvpData = worldViewProjectionMatrix;
 
 			*transformationMatrixDataSprite = worldViewProjectionMatrixSprite;
