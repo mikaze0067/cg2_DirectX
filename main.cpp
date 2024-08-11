@@ -214,9 +214,6 @@ CompileShader(
 	assert(SUCCEEDED(hr));
 	//成功したログを出す
 	Log(ConvertString(std::format(L"Compile Succeeded, path:{}, profile:{}\n", filePath, profile)));
-	//もうつかわないリソースを解放
-	shaderSource->Release();
-	shaderResult->Release();
 	//実用のバイナリを返却
 	return shaderBlob;
 }
@@ -533,8 +530,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		filter.DenyList.pSeverityList = severities;
 		//指定したメッセージの表示を抑制する
 		infoQueue->PushStorageFilter(&filter);
-		//解放
-		infoQueue->Release();
 	}
 #endif
 
