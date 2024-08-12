@@ -10,6 +10,8 @@
 #include <vector>
 #include <corecrt_math_defines.h>
 #include <wrl.h>
+#include <fstream>
+#include <sstream>
 #include "math/Vector2.h"
 #include "math/Affine.h"
 #include "math/Inverse.h"
@@ -39,6 +41,17 @@ struct Transform{
 	Vector3 scale;
 	Vector3 rotate;
 	Vector3 translate;
+};
+
+struct MaterialData
+{
+	std::string textureFilePath;
+};
+
+struct ModelData
+{
+	std::vector<VertexData> vertices;
+	MaterialData material;
 };
 
 struct Material{
@@ -367,6 +380,104 @@ D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(Microsoft::WRL::ComPtr <ID3D1
 	handleGPU.ptr += (descriptorSize * index);
 	return handleGPU;
 }
+
+MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename) {
+	MaterialData materialData;//構築するMaterialData
+	std::string line;
+	std::ifstream file(directoryPath + "/" + filename);
+	assert(file.is_open());
+
+	while (std::getline(file, line)) {
+		std::string identifier;
+		std::istringstream s(line);
+		s >> identifier;
+
+		//identiferに応じた処理
+		if (identifier == "map_Kd") {
+			std::string textureFilename;
+			s >> textureFilename;
+			//連結してファイルパスにする
+			materialData.textureFilePath = directoryPath + "/" + textureFilename;
+		}
+	}
+	return materialData;
+}
+
+
+ModelData LoadObjFile(const std::string& directoryPath, const std::string& filename) {
+	ModelData modelData; //構築するModelData
+	std::vector<Vector4>positions; //位置
+	std::vector<Vector3>normals; //法線
+	std::vector<Vector2>texcoords; //テクスチャ座標
+	std::string line; //ファイルから読んだ１行を格納するもの
+
+	std::ifstream file(directoryPath + "/" + filename); //ファイルを開く
+	assert(file.is_open());//とりあえず開けなかったら止める
+
+	while (std::getline(file, line)) {
+		std::string identifier;
+		std::istringstream s(line);
+		s >> identifier; // 先頭の識別子を読む
+
+		if (identifier == "v") {
+			Vector4 position;
+			s >> position.x >> position.y >> position.z;
+			position.w = 1.0f;
+			positions.push_back(position);
+		}
+		else if (identifier == "vt") {
+			Vector2 texcoord;
+			s >> texcoord.x >> texcoord.y;
+			texcoords.push_back(texcoord);
+		}
+		else if (identifier == "vn") {
+			Vector3 normal;
+			s >> normal.x >> normal.y >> normal.z;
+			normals.push_back(normal);
+		}
+		else if (identifier == "f") {
+			VertexData triangle[3];
+			//面は三角形限定。その他は未対応
+			for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
+				std::string vertexDefinition;
+				s >> vertexDefinition;
+				//頂点の要素へのIndexは「位置 / UV / 法線」で格納されているので、分解してIndexを取得する
+				std::istringstream v(vertexDefinition);
+				uint32_t elementIndices[3];
+				for (int32_t element = 0; element < 3; ++element) {
+					std::string index;
+					std::getline(v, index, '/');///区切りでインデックスを読んでいく	
+					elementIndices[element] = std::stoi(index);
+				}
+				//要素のIndexから、実際の要素の値を取得して、頂点を構築する
+				Vector4 position = positions[elementIndices[0] - 1];
+				Vector2 texcoord = texcoords[elementIndices[1] - 1];
+				Vector3 normal = normals[elementIndices[2] - 1];
+				//VertexData vertex = { position,texcoord,normal };
+				//modelData.vertices.push_back(vertex);
+
+				position.x *= -1.0f;
+				normal.x *= -1.0f;
+				texcoord.y = 1.0f - texcoord.y;
+
+				triangle[faceVertex] = { position,texcoord,normal };
+			}
+			//頂点を逆順で登録することで、回り順を逆にする 06_02_p23
+			modelData.vertices.push_back(triangle[2]);
+			modelData.vertices.push_back(triangle[1]);
+			modelData.vertices.push_back(triangle[0]);
+		}
+		else if (identifier == "mtllib") {
+			//materialTemplateLibraryファイルの名前を取得する
+			std::string materialFilename;
+			s >> materialFilename;
+			//基本的にobjファイルと同一階層にmtlは存在させるので、ディレクトリ名を渡す
+			modelData.material = LoadMaterialTemplateFile(directoryPath, materialFilename);
+		}
+	}
+	return modelData;
+}
+
 
 struct D3DResourceLeakChecker {
 	~D3DResourceLeakChecker() {
@@ -786,71 +897,89 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #pragma endregion 
 
+	ModelData modelData = LoadObjFile("resource", "axis.obj");
+	DirectX::ScratchImage mipImages2 = LoadTexture(modelData.material.textureFilePath);
+	Microsoft::WRL::ComPtr <ID3D12Resource> vertexResource = CreateBufferResource(device, sizeof(VertexData) * modelData.vertices.size());
+
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
+
+	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
+
+	vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size());
+
+	vertexBufferView.StrideInBytes = sizeof(VertexData);
+	// 頂点リソースにデータを書き込む
+	VertexData* vertexData = nullptr;
+	// 書き込むためのアドレスを取得
+	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+	std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size());
+
+
 #pragma region VertexResourceの生成
 
-	Microsoft::WRL::ComPtr <ID3D12Resource> vertexResource = CreateBufferResource(device, sizeof(VertexData) * 6);
+	//Microsoft::WRL::ComPtr <ID3D12Resource> vertexResource = CreateBufferResource(device, sizeof(VertexData) * 6);
 
 #pragma endregion
 
 #pragma region VertexBufferViewを作成
 
-	//頂点バッファビューを作成
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
-	//リソースの先頭のアドレスから使う
-	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
-	//使用するリソースのサイズは頂点3つ分のサイズ
-	vertexBufferView.SizeInBytes = sizeof(VertexData) * 6;
-	//1頂点あたりのサイズ
-	vertexBufferView.StrideInBytes = sizeof(VertexData);
+	////頂点バッファビューを作成
+	//D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
+	////リソースの先頭のアドレスから使う
+	//vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
+	////使用するリソースのサイズは頂点3つ分のサイズ
+	//vertexBufferView.SizeInBytes = sizeof(VertexData) * 6;
+	////1頂点あたりのサイズ
+	//vertexBufferView.StrideInBytes = sizeof(VertexData);
 
 #pragma endregion
 
 #pragma region 頂点リソース
 
-	//頂点リソースにデータを書き込む
-	VertexData* vertexData = nullptr;
-	//書き込む為のアドレスを取得
-	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-	//左下
-	vertexData[0].position = { -0.5f,-0.5f,0.0f,1.0f };
-	vertexData[0].texcoord = { 0.0f,1.0f };
-	vertexData[0].normal.x = vertexData[0].position.x;
-	vertexData[0].normal.y = vertexData[0].position.y;
-	vertexData[0].normal.z = vertexData[0].position.z;
-	//上
-	vertexData[1].position = { 0.0f,0.5f,0.0f,1.0f };
-	vertexData[1].texcoord = { 0.5f,0.0f };
-	vertexData[1].normal.x = vertexData[1].position.x;
-	vertexData[1].normal.y = vertexData[1].position.y;
-	vertexData[1].normal.z = vertexData[1].position.z;
+	////頂点リソースにデータを書き込む
+	//VertexData* vertexData = nullptr;
+	////書き込む為のアドレスを取得
+	//vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+	////左下
+	//vertexData[0].position = { -0.5f,-0.5f,0.0f,1.0f };
+	//vertexData[0].texcoord = { 0.0f,1.0f };
+	//vertexData[0].normal.x = vertexData[0].position.x;
+	//vertexData[0].normal.y = vertexData[0].position.y;
+	//vertexData[0].normal.z = vertexData[0].position.z;
+	////上
+	//vertexData[1].position = { 0.0f,0.5f,0.0f,1.0f };
+	//vertexData[1].texcoord = { 0.5f,0.0f };
+	//vertexData[1].normal.x = vertexData[1].position.x;
+	//vertexData[1].normal.y = vertexData[1].position.y;
+	//vertexData[1].normal.z = vertexData[1].position.z;
 
-	//右下
-	vertexData[2].position = { 0.5f,-0.5f,0.0f,1.0f };
-	vertexData[2].texcoord = { 1.0f,1.0f };
-	vertexData[2].normal.x = vertexData[2].position.x;
-	vertexData[2].normal.y = vertexData[2].position.y;
-	vertexData[2].normal.z = vertexData[2].position.z;
+	////右下
+	//vertexData[2].position = { 0.5f,-0.5f,0.0f,1.0f };
+	//vertexData[2].texcoord = { 1.0f,1.0f };
+	//vertexData[2].normal.x = vertexData[2].position.x;
+	//vertexData[2].normal.y = vertexData[2].position.y;
+	//vertexData[2].normal.z = vertexData[2].position.z;
 
-	//左下2
-	vertexData[3].position = { -0.5f,-0.5f,0.5f,1.0f };
-	vertexData[3].texcoord = { 0.0f,1.0f };
-	vertexData[3].normal.x = vertexData[3].position.x;
-	vertexData[3].normal.y = vertexData[3].position.y;
-	vertexData[3].normal.z = vertexData[3].position.z;
+	////左下2
+	//vertexData[3].position = { -0.5f,-0.5f,0.5f,1.0f };
+	//vertexData[3].texcoord = { 0.0f,1.0f };
+	//vertexData[3].normal.x = vertexData[3].position.x;
+	//vertexData[3].normal.y = vertexData[3].position.y;
+	//vertexData[3].normal.z = vertexData[3].position.z;
 
-	//上2
-	vertexData[4].position = { 0.0f,0.0f,0.0f,1.0f };
-	vertexData[4].texcoord = { 0.5f,0.0f };
-	vertexData[4].normal.x = vertexData[4].position.x;
-	vertexData[4].normal.y = vertexData[4].position.y;
-	vertexData[4].normal.z = vertexData[4].position.z;
+	////上2
+	//vertexData[4].position = { 0.0f,0.0f,0.0f,1.0f };
+	//vertexData[4].texcoord = { 0.5f,0.0f };
+	//vertexData[4].normal.x = vertexData[4].position.x;
+	//vertexData[4].normal.y = vertexData[4].position.y;
+	//vertexData[4].normal.z = vertexData[4].position.z;
 
-	//右下2
-	vertexData[5].position = { 0.5f,-0.5f,-0.5f,1.0f };
-	vertexData[5].texcoord = { 1.0f,1.0f };
-	vertexData[5].normal.x = vertexData[5].position.x;
-	vertexData[5].normal.y = vertexData[5].position.y;
-	vertexData[5].normal.z = vertexData[5].position.z;
+	////右下2
+	//vertexData[5].position = { 0.5f,-0.5f,-0.5f,1.0f };
+	//vertexData[5].texcoord = { 1.0f,1.0f };
+	//vertexData[5].normal.x = vertexData[5].position.x;
+	//vertexData[5].normal.y = vertexData[5].position.y;
+	//vertexData[5].normal.z = vertexData[5].position.z;
 
 #pragma endregion
 
@@ -864,7 +993,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #pragma region Textureを読んで転送(2つ目)
 	//Textureを読んで転送する
-	DirectX::ScratchImage mipImages2 = LoadTexture("./Resource/monsterBall.png");
+	//DirectX::ScratchImage mipImages2 = LoadTexture("./Resource/monsterBall.png");
 	const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata();
 	Microsoft::WRL::ComPtr <ID3D12Resource> textureResource2 = CreateTextureResource(device, metadata2);
 	Microsoft::WRL::ComPtr <ID3D12Resource> intermeditateResource2 = UploadTextureData(textureResource2, mipImages2, device, commandList);
@@ -1256,7 +1385,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//Noneにしておく
 			barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 			//バリアを張る対象のリソース。現在のバックバッファに対して行う
-			barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
+			barrier.Transition.pResource = swapChainResources->GetAddressOf()[backBufferIndex];
 			//遷移前（現在）のResourceState
 			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
 			//遷移後のResourceState
@@ -1268,27 +1397,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 			commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
 			//指定した色で画面全体をクリアする
-			float clearColor[] = { 0.1f,0.25f,0.5f,1.0f }; //青っぽい色。RGBAの順 
+			float clearColor[] = { 0.1f,0.25f,0.5f,1.0f, };
 			commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
 			//指定した深度で画面全体をクリアする
 			commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 			//描画用のDescreptorHeapの設定
-			Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> descriptorHeaps[] = { srvDescriptorHeap };
-			commandList->SetDescriptorHeaps(1, descriptorHeaps->GetAddressOf());
+			Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> descrptorHeaps[] = { srvDescriptorHeap };
+			commandList->SetDescriptorHeaps(1, descrptorHeaps->GetAddressOf());
 
-			commandList->RSSetViewports(1, &viewport); //viewportを設定
-			commandList->RSSetScissorRects(1, &scissorRect); //scissorを設定
+			commandList->RSSetViewports(1, &viewport);//viewportを設定
+			commandList->RSSetScissorRects(1, &scissorRect);//scissorを設定
 
 			//rootSignatureを設定。PSOに設定しているけど別途設定が必要
 			commandList->SetGraphicsRootSignature(rootSignature.Get());
 			//PSOを設定
 			commandList->SetPipelineState(graphicsPipelineState.Get());
 			//VBVを設定
-			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSphere);
-			//IBVを設定
-			commandList->IASetIndexBuffer(&indexBufferViewSprite);
-
+			commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 
 			//形状を設定。PSOに設定しているものとはまた別。同じものを設定すると考えておけば良い
 			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -1296,31 +1422,33 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
 			//マテリアルスプライトCBufferの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
-			//wvp用のCBufferの場所を設定
-			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 			//ライトのマテリアルCBufferの場所を指定
 			commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
 			//SRVのDescreptorTableの先頭を設定。2はRootParameter[2]である
 			commandList->SetGraphicsRootDescriptorTable(2, useMonsterBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+			//wvp用のCBufferの場所を設定
+			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 			//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
-			commandList->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
+			commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 
 			//
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 			//Spriteの描画。
-			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite); //VBVを設定
+			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
 			//TransformationMatrixCBuffersの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
 			//
-			commandList->SetGraphicsRootConstantBufferView(0, windowResourceSprite->GetGPUVirtualAddress());
+			//commandList->SetGraphicsRootConstantBufferView(0, windowResourceSprite->GetGPUVirtualAddress());
 			//描画！（DrawCall/ドローコール）
-			commandList->DrawInstanced(6, 1, 0, 0);
+			//commandList->DrawInstanced(6, 1, 0, 0);
 
 			//描画！（DrawCall/ドローコール）6個のインデックスを使用し1つのインスタンスを描画
-			commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+			commandList->IASetIndexBuffer(&indexBufferViewSprite);
 
+			//commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 			ImGui::Render();
+
 			
 			//
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
