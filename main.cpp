@@ -784,6 +784,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	inputElementDescs[1].SemanticIndex = 0;
 	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
 	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	inputElementDescs[2].SemanticName = "NORMAL";
 	inputElementDescs[2].SemanticIndex = 0;
 	inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
 	inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
@@ -1297,7 +1298,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f);
 			ImGui::DragFloat3("Rotate", &transform.rotate.x, 0.01f);
 			ImGui::DragFloat3("Translate", &transform.translate.x, 0.01f);
+
 			ImGui::Checkbox("useMonsterBall", &useMonsterBall);
+
+			ImGui::DragFloat4("Light color", &directionalLightData->color.x, 0.01f);
+			ImGui::DragFloat3("Light Direction", &directionalLightData->direction.x, 0.01f);
+			ImGui::DragFloat("Light Intensity", &directionalLightData->intensity, 0.01f);
+
+			ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+			ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+			ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
 
 			ImGui::End();
 			//これから書き込むバックバッファのインデックスを取得
@@ -1317,7 +1327,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			wvpData->WVP = worldViewProjectionMatrix;
 			wvpData->World = worldMatrix;
 
-			transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
+			transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprate;
 			transformationMatrixDataSprite->World = worldMatrixSprite;
 
 			//UVTransform用の行列
@@ -1325,6 +1335,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			uvTransformMatrix = Multiply(uvTransformMatrix, MakeRotateZMatrix(uvTransformSprite.rotate.z));
 			uvTransformMatrix = Multiply(uvTransformMatrix, MakeTranslateMatrix(uvTransformSprite.translate));
 			windowDataSprite->uvTransform = uvTransformMatrix;
+
 
 			//TransitionBarrierの設定
 			D3D12_RESOURCE_BARRIER barrier{};
@@ -1345,27 +1356,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 			commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
 			//指定した色で画面全体をクリアする
-			float clearColor[] = { 0.1f,0.25f,0.5f,1.0f }; //青っぽい色。RGBAの順 
+			float clearColor[] = { 0.1f,0.25f,0.5f,1.0f, };
 			commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
 			//指定した深度で画面全体をクリアする
 			commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 			//描画用のDescreptorHeapの設定
-			ID3D12DescriptorHeap* descriptorHeaps[] = { srvDescriptorHeap };
-			commandList->SetDescriptorHeaps(1, descriptorHeaps);
+			ID3D12DescriptorHeap* descrptorHeaps[] = { srvDescriptorHeap };
+			commandList->SetDescriptorHeaps(1, descrptorHeaps);
 
-			commandList->RSSetViewports(1, &viewport); //viewportを設定
-			commandList->RSSetScissorRects(1, &scissorRect); //scissorを設定
+			commandList->RSSetViewports(1, &viewport);//viewportを設定
+			commandList->RSSetScissorRects(1, &scissorRect);//scissorを設定
 
 			//rootSignatureを設定。PSOに設定しているけど別途設定が必要
 			commandList->SetGraphicsRootSignature(rootSignature);
 			//PSOを設定
 			commandList->SetPipelineState(graphicsPipelineState);
 			//VBVを設定
-			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSphere);
-			//IBVを設定
-			commandList->IASetIndexBuffer(&indexBufferViewSprite);
-
+			commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 
 			//形状を設定。PSOに設定しているものとはまた別。同じものを設定すると考えておけば良い
 			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -1373,29 +1381,30 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
 			//マテリアルスプライトCBufferの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
-			//wvp用のCBufferの場所を設定
-			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 			//ライトのマテリアルCBufferの場所を指定
 			commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
 			//SRVのDescreptorTableの先頭を設定。2はRootParameter[2]である
 			commandList->SetGraphicsRootDescriptorTable(2, useMonsterBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+			//wvp用のCBufferの場所を設定
+			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 			//描画！（DrawCall/ドローコール）。3頂点で一つのインスタンス。インスタンスについては今後
 			commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 
 			//
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 			//Spriteの描画。
-			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite); //VBVを設定
+			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
 			//TransformationMatrixCBuffersの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
 			//
-			commandList->SetGraphicsRootConstantBufferView(0, windowResourceSprite->GetGPUVirtualAddress());
+			//commandList->SetGraphicsRootConstantBufferView(0, windowResourceSprite->GetGPUVirtualAddress());
 			//描画！（DrawCall/ドローコール）
-			commandList->DrawInstanced(6, 1, 0, 0);
+			//commandList->DrawInstanced(6, 1, 0, 0);
 
 			//描画！（DrawCall/ドローコール）6個のインデックスを使用し1つのインスタンスを描画
-			commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+			commandList->IASetIndexBuffer(&indexBufferViewSprite);
 
+			//commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 			ImGui::Render();
 
