@@ -1178,6 +1178,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			ImGui::DragFloat3("Light Direction", &directionalLightData->direction.x, 0.01f);
 			ImGui::DragFloat("Light Intensity", &directionalLightData->intensity, 0.01f);
 
+			ImGui::DragFloat3("Scale", &transformSprite.scale.x, 0.01f);
+			ImGui::DragFloat3("Rotate", &transformSprite.rotate.x, 0.01f);
+			ImGui::DragFloat3("Translate", &transformSprite.translate.x, 0.01f);
+
 			ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
 			ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
 			ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
