@@ -1,5 +1,5 @@
 #include "Matrix4x4.h"
-#pragma once
+
 Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip, float farClip) {
 	Matrix4x4 ans = { 0 };
 	float cot = 1 / std::tan(fovY / 2);
