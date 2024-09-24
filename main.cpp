@@ -1443,7 +1443,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//描画！（DrawCall/ドローコール）6個のインデックスを使用し1つのインスタンスを描画
 			commandList->IASetIndexBuffer(&indexBufferViewSprite);
 
-			//commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+			commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 			ImGui::Render();
 
