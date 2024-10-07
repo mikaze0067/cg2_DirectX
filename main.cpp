@@ -24,12 +24,17 @@
 #include "externals/imgui/imgui_impl_win32.h"
 #include "externals/DirectXTex/DirectXTex.h"
 #include "externals/DirectXTex/d3dx12.h"
+#define DIRECTINPUT_VERSION     0x0800   //DirectInputのバージョン指定
+#include <dinput.h>
+
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 #pragma comment(lib,"dxguid.lib")
 #pragma comment(lib,"dxcompiler.lib")
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
+
+#pragma comment(lib,"dinput8.lib")
 
 struct VertexData {
 	Vector4 position;
@@ -517,6 +522,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//カーソル
 	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 
+
 	//ウィンドウクラスを登録する
 	RegisterClass(&wc);
 
@@ -541,6 +547,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	//ウィンドウを表示する
 	ShowWindow(hwnd, SW_SHOW);
+
 #pragma endregion
 
 #ifdef _DEBUG
@@ -557,7 +564,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//DXGIファクトリーの生成
 	dxgiFactory = nullptr;
 
-	//HRESULTはWindows系のエラーコードであり、
+	//HRESULTはWindows系のエードであり、
 	//関数が成功したかどうかをSUCCEEDEDマクロで判定できる
 	HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
 
@@ -643,6 +650,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		infoQueue->PushStorageFilter(&filter);
 	}
 #endif
+
+	//DirectInputの初期化
+	IDirectInput8* directInput = nullptr;
+	hr = DirectInput8Create(
+		wc.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
+		(void**)&directInput, nullptr);
+	assert(SUCCEEDED(hr));
+
+	//キーボードデバイスの生成
+	IDirectInputDevice8* keyboard = nullptr;
+	hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+	assert(SUCCEEDED(hr));
+
+	//入力データ形式セット
+	hr = keyboard->SetDataFormat(&c_dfDIKeyboard);//標準形式
+	assert(SUCCEEDED(hr));
+
+	//排他的制御レベルのセット
+	hr = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	assert(SUCCEEDED(hr));
 
 #pragma region commandQueueの生成
 	//コマンドキューを生成する
@@ -1297,6 +1324,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	indexDataSprite[3] = 1;  indexDataSprite[4] = 3;  indexDataSprite[5] = 2;
 #pragma endregion
 
+
 	
 #pragma region ImGuiの初期化
 
@@ -1326,6 +1354,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			DispatchMessage(&msg);
 		}
 		else {
+
+			//キーボード情報の取得開始
+			keyboard->Acquire();
+			//全キーの入力状態を取得する
+			BYTE key[256] = {};
+			keyboard->GetDeviceState(sizeof(key), key);
+			//数字の0キーが押されていたら
+			if (key[DIK_0]) {
+				OutputDebugStringA("Hit 0\n");
+			}
+
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
@@ -1446,7 +1485,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 			ImGui::Render();
-
 			
 			//
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
