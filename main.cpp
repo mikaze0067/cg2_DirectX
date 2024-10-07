@@ -24,9 +24,7 @@
 #include "externals/imgui/imgui_impl_win32.h"
 #include "externals/DirectXTex/DirectXTex.h"
 #include "externals/DirectXTex/d3dx12.h"
-#define DIRECTINPUT_VERSION     0x0800   //DirectInputのバージョン指定
-#include <dinput.h>
-
+#include "input.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 #pragma comment(lib,"dxguid.lib")
@@ -651,25 +649,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	}
 #endif
 
-	//DirectInputの初期化
-	IDirectInput8* directInput = nullptr;
-	hr = DirectInput8Create(
-		wc.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
-		(void**)&directInput, nullptr);
-	assert(SUCCEEDED(hr));
+#pragma region	DirectInputの初期化
 
-	//キーボードデバイスの生成
-	IDirectInputDevice8* keyboard = nullptr;
-	hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
-	assert(SUCCEEDED(hr));
+	//ポインタ
+	Input* input = nullptr;
 
-	//入力データ形式セット
-	hr = keyboard->SetDataFormat(&c_dfDIKeyboard);//標準形式
-	assert(SUCCEEDED(hr));
+	//入力の初期化
+	input = new Input();
+	input->Initialize(wc.hInstance,hwnd);
 
-	//排他的制御レベルのセット
-	hr = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
-	assert(SUCCEEDED(hr));
+	//入力解放
+	delete input;
+
+
+#pragma endregion
 
 #pragma region commandQueueの生成
 	//コマンドキューを生成する
