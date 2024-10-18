@@ -1398,7 +1398,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			uvTransformMatrix = Multiply(uvTransformMatrix, MakeTranslateMatrix(uvTransformSprite.translate));
 			windowDataSprite->uvTransform = uvTransformMatrix;
 
-
 			//TransitionBarrierの設定
 			D3D12_RESOURCE_BARRIER barrier{};
 			//今回位のバリアはTransition
