@@ -79,6 +79,23 @@ struct  DirectionaLight{
 	float intensity;
 };
 
+enum BlendMode {
+	//ブレンドなし
+	kBlendModeNone,
+	//通常ブレンド。デフォルト
+	kBlendModeNormal,
+	//加算
+	kBlendModeAdd,
+	//減算
+	kBlendModeSubtract,
+	//乗算
+	kBlendModeMultiply,
+	//スクリーン
+	kBlendModeScreen,
+	//利用してはいけない
+	kCountOfBlendMode,
+};
+
 //class ResourceObject {
 //public:
 //	ResourceObject(Microsoft::WRL::ComPtr <ID3D12Resource> resource)
@@ -403,7 +420,6 @@ MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const st
 	return materialData;
 }
 
-
 ModelData LoadObjFile(const std::string& directoryPath, const std::string& filename) {
 	ModelData modelData; //構築するModelData
 	std::vector<Vector4>positions; //位置
@@ -477,7 +493,6 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
 	}
 	return modelData;
 }
-
 
 struct D3DResourceLeakChecker {
 	~D3DResourceLeakChecker() {
@@ -1262,7 +1277,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	windowDataSprite->uvTransform = MakeIdentity4x4();
 #pragma endregion
 
-
 #pragma region Sprite用のTransformationMatrix
 	//Sprite用のTransformationMatrix用のリソースを作る
 	Microsoft::WRL::ComPtr <ID3D12Resource> transformationMatrixResourceSprite = CreateBufferResource(device, sizeof(TransformatioMatrix));
@@ -1346,9 +1360,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 			ImGui::Checkbox("useMonsterBall", &useMonsterBall);
 			
-			ImGui::DragFloat4("Light color", &directionalLightData->color.x, 0.01f);
-			ImGui::DragFloat3("Light Direction", &directionalLightData->direction.x, 0.01f);
-			ImGui::DragFloat("Light Intensity", &directionalLightData->intensity, 0.01f);
+			ImGui::DragFloat4("LightColor", &directionalLightData->color.x, 0.01f);
+			ImGui::DragFloat3("LightDirection", &directionalLightData->direction.x, 0.01f);
+			ImGui::DragFloat("Intensity", &directionalLightData->intensity, 0.01f);
 
 			ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
 			ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
