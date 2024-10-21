@@ -2,8 +2,6 @@
 #include <windows.h>
 #include <wrl.h>
 
-
-
 //入力
 class Input {
 public: //メンバ変数
