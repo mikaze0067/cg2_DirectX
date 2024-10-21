@@ -1,8 +1,5 @@
 #include "Input.h"
 #include <cassert>
-#include <wrl.h>
-#define DIRECTINPUT_VERSION     0x0800   //DirectInputのバージョン指定
-#include <dinput.h>
 
 #pragma comment(lib,"dxguid.lib")
 #pragma comment(lib,"dinput8.lib")
@@ -35,9 +32,17 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd)
 	hr = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(hr));
 
-
 }
 
 void Input::Update()
 {
+	//キーボード情報の取得開始
+	keyboard->Acquire();
+	//全キーの入力状態を取得する
+	BYTE key[256] = {};
+	keyboard->GetDeviceState(sizeof(key), key);
+	//数字の0キーが押されていたら
+	if (key[DIK_0]) {
+		OutputDebugStringA("Hit 0\n");
+	}
 }
