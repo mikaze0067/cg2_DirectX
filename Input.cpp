@@ -14,14 +14,14 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd)
 	HRESULT hr;
 
 	//DirectInputの初期化
-	Microsoft::WRL::ComPtr <IDirectInput8> directInput = nullptr;
+	ComPtr <IDirectInput8> directInput = nullptr;
 	hr = DirectInput8Create(
 		hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
 		(void**)&directInput, nullptr);
 	assert(SUCCEEDED(hr));
 
 	//キーボードデバイスの生成
-	Microsoft::WRL::ComPtr <IDirectInputDevice8> keyboard = nullptr;
+	ComPtr <IDirectInputDevice8> keyboard = nullptr;
 	hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
 	assert(SUCCEEDED(hr));
 
@@ -35,7 +35,5 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd)
 
 }
 
-void Input::Update()
-{
-	
+void Input::Update(){
 }
