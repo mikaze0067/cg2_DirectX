@@ -3,7 +3,6 @@
 #define DIRECTINPUT_VERSION     0x0800   //DirectInputのバージョン
 #include <dinput.h>
 
-
 #pragma comment(lib,"dxguid.lib")
 #pragma comment(lib,"dinput8.lib")
 
@@ -15,14 +14,14 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd)
 	HRESULT hr;
 
 	//DirectInputの初期化
-	ComPtr <IDirectInput8> directInput = nullptr;
+	Microsoft::WRL::ComPtr <IDirectInput8> directInput = nullptr;
 	hr = DirectInput8Create(
 		hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
 		(void**)&directInput, nullptr);
 	assert(SUCCEEDED(hr));
 
 	//キーボードデバイスの生成
-	ComPtr <IDirectInputDevice8> keyboard = nullptr;
+	Microsoft::WRL::ComPtr <IDirectInputDevice8> keyboard = nullptr;
 	hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
 	assert(SUCCEEDED(hr));
 
