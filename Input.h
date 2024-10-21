@@ -19,7 +19,17 @@ public: //メンバ変数
 	//更新
 	void Update();
 
+	bool PushKey(BYTE keyNumber);
+
+	bool TriggerKey(BYTE keyNumber);
+
 private:
+	//DirectInputの初期化
+	ComPtr <IDirectInput8> directInput;
 	//キーボードのデバイス
 	ComPtr<IDirectInputDevice8> keyboard;
+	//全キーの状態
+	BYTE key[256] = {};
+	//旋回の全キーの状態
+	BYTE keyPre[256] = {};
 };

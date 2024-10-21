@@ -654,9 +654,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//ポインタ
 	Input* input = nullptr;
 
-	//入力解放
-	delete input;
-
 	//入力の初期化
 	input = new Input();
 	input->Initialize(wc.hInstance,hwnd);
@@ -1355,6 +1352,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//入力の更新
 			input->Update();
 
+			if (input->TriggerKey(DIK_SPACE)) {
+				OutputDebugStringA("Hit 0\n");
+			}
+
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
@@ -1513,7 +1514,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			hr = commandList->Reset(commandAllocator.Get(), nullptr);
 			assert(SUCCEEDED(hr));
 		}
+		
 	}
+	//入力解放
+	delete input;
 	ImGui_ImplDX12_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
