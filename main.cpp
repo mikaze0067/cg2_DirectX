@@ -658,8 +658,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	input = new Input();
 	input->Initialize(wc.hInstance,hwnd);
 
-	//入力解放
-	delete input;
+	
 
 
 #pragma endregion
@@ -1348,15 +1347,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		}
 		else {
 
-			//キーボード情報の取得開始
-			keyboard->Acquire();
-			//全キーの入力状態を取得する
-			BYTE key[256] = {};
-			keyboard->GetDeviceState(sizeof(key), key);
-			//数字の0キーが押されていたら
-			if (key[DIK_0]) {
-				OutputDebugStringA("Hit 0\n");
-			}
+			//入力の更新
+			input->Update();
 
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
@@ -1517,6 +1509,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			assert(SUCCEEDED(hr));
 		}
 	}
+	//入力解放
+	delete input;
 	ImGui_ImplDX12_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
