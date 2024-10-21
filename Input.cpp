@@ -4,9 +4,6 @@
 #pragma comment(lib,"dxguid.lib")
 #pragma comment(lib,"dinput8.lib")
 
-
-using namespace Microsoft::WRL;
-
 void Input::Initialize(HINSTANCE hInstance, HWND hwnd)
 {
 
@@ -20,7 +17,7 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd)
 	assert(SUCCEEDED(hr));
 
 	//キーボードデバイスの生成
-	Microsoft::WRL::ComPtr <IDirectInputDevice8> keyboard = nullptr;
+	//Microsoft::WRL::ComPtr <IDirectInputDevice8> keyboard = nullptr;
 	hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
 	assert(SUCCEEDED(hr));
 
@@ -41,8 +38,8 @@ void Input::Update()
 	//全キーの入力状態を取得する
 	BYTE key[256] = {};
 	keyboard->GetDeviceState(sizeof(key), key);
-	//数字の0キーが押されていたら
-	if (key[DIK_0]) {
-		OutputDebugStringA("Hit 0\n");
-	}
+	////数字の0キーが押されていたら
+	//if (key[DIK_0]) {
+	//	OutputDebugStringA("Hit 0\n");
+	//}
 }

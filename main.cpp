@@ -654,13 +654,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//ポインタ
 	Input* input = nullptr;
 
+	//入力解放
+	delete input;
+
 	//入力の初期化
 	input = new Input();
 	input->Initialize(wc.hInstance,hwnd);
 
-	//入力解放
-	delete input;
-
+	//入力の更新
+	input->Update();
 
 #pragma endregion
 
@@ -1333,6 +1335,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 #pragma endregion
+
+	
 
 	//出力ウィンドウの文字出力
 	//Log("Hello DirectX!\n");
