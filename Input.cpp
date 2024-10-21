@@ -8,8 +8,6 @@
 #pragma comment(lib,"dinput8.lib")
 
 
-using namespace Microsoft::WRL;
-
 void Input::Initialize(HINSTANCE hInstance, HWND hwnd)
 {
 
