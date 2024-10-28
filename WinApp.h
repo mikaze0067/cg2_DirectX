@@ -1,8 +1,14 @@
 #pragma once
+#include <Windows.h>
+
 
 //WindowAPI
 class WinApp {
 public:
+
+	static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM LPARAM);
+public:
+
 	//初期化
 	void Initialize();
 	//更新
