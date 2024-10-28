@@ -24,7 +24,6 @@
 #include "input.h"
 #include "WinApp.h"
 
-
 #pragma comment(lib,"dxcompiler.lib")
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
