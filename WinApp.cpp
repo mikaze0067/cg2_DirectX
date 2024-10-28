@@ -1,5 +1,14 @@
 #include "WinApp.h"
 #include <wrl.h>
+#include "externals/imgui/imgui.h"
+#include <fstream>
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+
+const int32_t kClientWidth = 1280;
+const int32_t kClientHeight = 720;
+
 
 LRESULT WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
