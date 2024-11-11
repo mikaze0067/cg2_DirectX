@@ -19,6 +19,9 @@ public:
 
 	void Finalize();
 
+	//メッセージの処理
+	bool ProcessMessage();
+
 	//getter
 	HWND GetHwnd()const { return hwnd; }
 
