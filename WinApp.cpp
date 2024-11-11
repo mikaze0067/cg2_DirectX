@@ -3,6 +3,7 @@
 #include "externals/imgui/imgui.h"
 #include <fstream>
 
+
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
@@ -68,4 +69,10 @@ void WinApp::Initialize()
 
 void WinApp::Update()
 {
+}
+
+void WinApp::Finalize()
+{
+	CloseWindow(hwnd);
+	CoUninitialize();
 }

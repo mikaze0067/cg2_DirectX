@@ -3,6 +3,7 @@
 #include <wrl.h>
 #define DIRECTINPUT_VERSION     0x0800    //DirectInputのバージョン
 #include <dinput.h>
+#include "WinApp.h"
 
 using namespace Microsoft::WRL;
 
@@ -15,7 +16,7 @@ public: //メンバ変数
 public: //メンバ変数
 
 	//初期化
-	void Initialize(HINSTANCE hInstance,HWND hwnd);
+	void Initialize(WinApp*winApp);
 	//更新
 	void Update();
 
@@ -32,4 +33,6 @@ private:
 	BYTE key[256] = {};
 	//旋回の全キーの状態
 	BYTE keyPre[256] = {};
+	//WindowAPI
+	WinApp* winApp_ = nullptr;
 };

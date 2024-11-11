@@ -1,5 +1,6 @@
 #pragma once
 #include <Windows.h>
+#include <cstdint>
 
 
 //WindowAPI
@@ -8,12 +9,15 @@ public:
 
 	static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM LPARAM);
 
+	
 public:
 
 	//初期化
 	void Initialize();
 	//更新
 	void Update();
+
+	void Finalize();
 
 	//getter
 	HWND GetHwnd()const { return hwnd; }
@@ -24,7 +28,6 @@ public:
 	//クライアント領域のサイズ
 	static const int32_t kClientWidth = 1280;
 	static const int32_t kClientHeight = 720;
-
 private:
 	HWND hwnd = nullptr;
 

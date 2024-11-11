@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <cstdint>
+#include <fstream>
 #include <string>
 #include <format>
 #include <d3d12.h>
@@ -23,6 +24,7 @@
 #include "externals/DirectXTex/d3dx12.h"
 #include "input.h"
 #include "WinApp.h"
+
 
 #pragma comment(lib,"dxcompiler.lib")
 #pragma comment(lib,"d3d12.lib")
@@ -610,7 +612,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	//入力の初期化
 	input = new Input();
-	input->Initialize(winApp->GetHInstance(), winApp->GetHwnd());
+	input->Initialize(winApp);
 
 	//入力の更新
 	input->Update();
@@ -1470,8 +1472,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		}
 		
 	}
+	
 	//入力解放
 	delete input;
+	//WindowAPIの終了処理
+	winApp->Finalize();
 	//WindowsAPI解放
 	delete winApp;
 
@@ -1480,8 +1485,5 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	ImGui::DestroyContext();
 	CloseHandle(fenceEvent);
 	
-	CloseWindow(winApp->GetHwnd());
-
-	CoUninitialize();
 	return 0;
 }
