@@ -5,13 +5,12 @@
 #include <dinput.h>
 #include "WinApp.h"
 
-using namespace Microsoft::WRL;
 
 //入力
 class Input {
 public: //メンバ変数
 
-	template<class T> using Comptr = Microsoft::WRL::ComPtr<T>;
+	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 public: //メンバ変数
 
