@@ -4,13 +4,12 @@
 #define DIRECTINPUT_VERSION     0x0800    //DirectInputのバージョン
 #include <dinput.h>
 
-using namespace Microsoft::WRL;
 
 //入力
 class Input {
 public: //メンバ変数
 
-	template<class T> using Comptr = Microsoft::WRL::ComPtr<T>;
+	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 public: //メンバ変数
 
