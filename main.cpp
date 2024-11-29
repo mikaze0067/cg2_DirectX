@@ -1529,7 +1529,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//ライトのマテリアルCBufferの場所を指定
 			commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
 			//SRVのDescreptorTableの先頭を設定。2はRootParameter[2]である
-			commandList->SetGraphicsRootDescriptorTable(2, useMonsterBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+			//commandList->SetGraphicsRootDescriptorTable(2, useMonsterBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 
 			commandList->SetGraphicsRootConstantBufferView(0, windowResourceSprite->GetGPUVirtualAddress());
 	
@@ -1540,11 +1540,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//描画！6頂点の板ポリゴンを、kNumInstance（今回は10）だけInstance描画を行う
 			commandList->DrawInstanced(UINT(modelData.vertices.size()), kNumInstance, 0, 0);
 
-			////Spriteの描画。
+			//Spriteの描画。
 			//commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
-			////描画！（DrawCall/ドローコール）6個のインデックスを使用し1つのインスタンスを描画
+			//描画！（DrawCall/ドローコール）6個のインデックスを使用し1つのインスタンスを描画
 			//commandList->IASetIndexBuffer(&indexBufferViewSprite);
-			////TransformationMatrixCBuffersの場所を設定
+			//TransformationMatrixCBuffersの場所を設定
 			//commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
 			//描画！（DrawCall/ドローコール）
 			//commandList->DrawInstanced(6, 1, 0, 0);
