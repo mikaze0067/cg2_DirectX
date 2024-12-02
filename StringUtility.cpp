@@ -1,4 +1,5 @@
 #include "StringUtility.h"
+#include <WinNls.h>
 
 std::wstring StringUtility::ConvertString(const std::string& str)
 {

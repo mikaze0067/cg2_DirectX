@@ -1,30 +1,31 @@
 #include <Windows.h>
-#include <fstream>
-#include <string>
-#include <format>
-#include <dxgidebug.h>
-#include <dxcapi.h>
-#include <vector>
-#include <corecrt_math_defines.h>
-#include <sstream>
-#include "math/Vector2.h"
-#include "math/Affine.h"
-#include "math/Inverse.h"
-#include "math/PerspectiveFovMatrix.h"
-#include "math/Vector4.h"
-#include "math/Identity.h"
-#include "math/OrthographicMatrix.h"
-#include "externals/imgui/imgui_impl_dx12.h"
-#include "externals/imgui/imgui_impl_win32.h"
-#include "externals/DirectXTex/DirectXTex.h"
-#include "externals/DirectXTex/d3dx12.h"
+//#include <fstream>
+//#include <string>
+//#include <format>
+//#include <dxgidebug.h>
+//#include <dxcapi.h>
+//#include <vector>
+//#include <corecrt_math_defines.h>
+//#include <sstream>
+//#include "math/Vector2.h"
+//#include "math/Affine.h"
+//#include "math/Inverse.h"
+//#include "math/PerspectiveFovMatrix.h"
+//#include "math/Vector4.h"
+//#include "math/Identity.h"
+//#include "math/OrthographicMatrix.h"
+//#include "externals/imgui/imgui_impl_dx12.h"
+//#include "externals/imgui/imgui_impl_win32.h"
+//#include "externals/DirectXTex/DirectXTex.h"
+//#include "externals/DirectXTex/d3dx12.h"
 #include "input.h"
 #include "WinApp.h"
+#include "DirectXCommon.h"
 
 
-#pragma comment(lib,"dxcompiler.lib")
+//#pragma comment(lib,"dxcompiler.lib")
 
-struct VertexData {
+/*struct VertexData {
 	Vector4 position;
 	Vector2 texcoord;
 	Vector3 normal;
@@ -118,48 +119,48 @@ void Log(const std::string& message) {
 	OutputDebugStringA(message.c_str());
 }
 
-//LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
-//	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) {
-//		return true;
-//	}
-//	//メッセージに応じてゲーム固有の処理を行う
-//	switch (msg) {
-//		//ウィンドウが破壊された
-//	case WM_DESTROY:
-//		//OSに対してアプリの終了を伝える
-//		PostQuitMessage(0);
-//		return 0;
-//	}
-//	//標準のメッセージ処理を行う
-//	return DefWindowProc(hwnd, msg, wparam, lparam);
-//}
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) {
+		return true;
+	}
+	//メッセージに応じてゲーム固有の処理を行う
+	switch (msg) {
+		//ウィンドウが破壊された
+	case WM_DESTROY:
+		//OSに対してアプリの終了を伝える
+		PostQuitMessage(0);
+		return 0;
+	}
+	//標準のメッセージ処理を行う
+	return DefWindowProc(hwnd, msg, wparam, lparam);
+}
 
-//std::wstring ConvertString(const std::string& str) {
-//	if (str.empty()) {
-//		return std::wstring();
-//	}
-//
-//	auto sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), NULL, 0);
-//	if (sizeNeeded == 0) {
-//		return std::wstring();
-//	}
-//	std::wstring result(sizeNeeded, 0);
-//	MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), &result[0], sizeNeeded);
-//	return result;
-//}
+std::wstring ConvertString(const std::string& str) {
+	if (str.empty()) {
+		return std::wstring();
+	}
 
-//std::string ConvertString(const std::wstring& str) {
-//	if (str.empty()) {
-//		return std::string();
-//	}
-//	auto sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), NULL, 0, NULL, NULL);
-//	if (sizeNeeded == 0) {
-//		return std::string();
-//	}
-//	std::string result(sizeNeeded, 0);
-//	WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), result.data(), sizeNeeded, NULL, NULL);
-//	return result;
-//}
+	auto sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), NULL, 0);
+	if (sizeNeeded == 0) {
+		return std::wstring();
+	}
+	std::wstring result(sizeNeeded, 0);
+	MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), &result[0], sizeNeeded);
+	return result;
+}
+
+std::string ConvertString(const std::wstring& str) {
+	if (str.empty()) {
+		return std::string();
+	}
+	auto sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), NULL, 0, NULL, NULL);
+	if (sizeNeeded == 0) {
+		return std::string();
+	}
+	std::string result(sizeNeeded, 0);
+	WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), result.data(), sizeNeeded, NULL, NULL);
+	return result;
+}
 
 Microsoft::WRL::ComPtr <IDxcBlob>
 CompileShader(
@@ -480,16 +481,16 @@ struct D3DResourceLeakChecker {
 	}
 };
 
-bool useMonsterBall = true;
+bool useMonsterBall = true;*/
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
-	D3DResourceLeakChecker leakCheck;
-	
-	//DXGIファクトリーの生成
-	Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory;
+	//D3DResourceLeakChecker leakCheck;
+	//
+	////DXGIファクトリーの生成
+	//Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory;
 
-	Microsoft::WRL::ComPtr < ID3D12Device> device;
+	//Microsoft::WRL::ComPtr < ID3D12Device> device;
 
 	//ポインタ
 	WinApp* winApp = nullptr;
@@ -498,7 +499,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	winApp = new WinApp();
 	winApp->Initialize();
 
-#ifdef _DEBUG
+	//ポインタ
+	DirectXCommon* dxCommon = nullptr;
+
+	//DirectXの初期化
+	dxCommon = new DirectXCommon();
+	dxCommon->Initialize();
+
+#pragma region	DirectInputの初期化
+
+	//ポインタ
+	Input* input = nullptr;
+
+	//入力の初期化
+	input = new Input();
+	input->Initialize(winApp);
+
+	//入力の更新
+	input->Update();
+
+#pragma endregion
+
+/*#ifdef _DEBUG
 	Microsoft::WRL::ComPtr <ID3D12Debug1> debugController = nullptr;
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
 		//デバッグレイヤーを有効化する
@@ -599,19 +621,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	}
 #endif
 
-#pragma region	DirectInputの初期化
 
-	//ポインタ
-	Input* input = nullptr;
-
-	//入力の初期化
-	input = new Input();
-	input->Initialize(winApp);
-
-	//入力の更新
-	input->Update();
-
-#pragma endregion
 
 #pragma region commandQueueの生成
 	//コマンドキューを生成する
@@ -1281,7 +1291,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		srvDescriptorHeap.Get(),
 		srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-#pragma endregion
+#pragma endregion*/
 
 	//出力ウィンドウの文字出力
 	//Log("Hello DirectX!\n");
@@ -1301,7 +1311,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			OutputDebugStringA("Hit 0\n");
 		}
 
-		ImGui_ImplDX12_NewFrame();
+		/*ImGui_ImplDX12_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 		//ImGui::ShowDemoWindow();
@@ -1457,9 +1467,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		hr = commandAllocator->Reset();
 		assert(SUCCEEDED(hr));
 		hr = commandList->Reset(commandAllocator.Get(), nullptr);
-		assert(SUCCEEDED(hr));
+		assert(SUCCEEDED(hr));*/
 
-		
 	}
 	
 	//入力解放
@@ -1468,11 +1477,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	winApp->Finalize();
 	//WindowsAPI解放
 	delete winApp;
+	//DirectX解放
+	delete dxCommon;
 
-	ImGui_ImplDX12_Shutdown();
+	/*ImGui_ImplDX12_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
-	CloseHandle(fenceEvent);
+	CloseHandle(fenceEvent);*/
 	
 	return 0;
 }
