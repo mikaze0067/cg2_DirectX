@@ -210,7 +210,6 @@ void DirectXCommon::Device()
 	}
 #endif
 
-
 }
 
 void DirectXCommon::Command()

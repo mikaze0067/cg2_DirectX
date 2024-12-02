@@ -28,6 +28,16 @@ public: //メンバ変数
 
 	void Device();
 
+
+private:
+
+	static D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap,
+		uint32_t descriptorSize, uint32_t index);
+
+	static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap,
+		uint32_t descriptorSize, uint32_t index);
+
+
 	void Command();
 
 	void SwapChain();
@@ -49,14 +59,6 @@ public: //メンバ変数
 	void DXCCompiler();
 
 	void ImGui();
-
-private:
-
-	static D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap,
-		uint32_t descriptorSize, uint32_t index);
-
-	static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap,
-		uint32_t descriptorSize, uint32_t index);
 
 	HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
 	//DXGIファクトリーの生成
