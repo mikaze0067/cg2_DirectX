@@ -1310,6 +1310,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		if (input->TriggerKey(DIK_SPACE)) {
 			OutputDebugStringA("Hit 0\n");
 		}
+		//描画前処理
+		dxCommon->PreDraw();
 
 		/*ImGui_ImplDX12_NewFrame();
 		ImGui_ImplWin32_NewFrame();
@@ -1468,6 +1470,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		assert(SUCCEEDED(hr));
 		hr = commandList->Reset(commandAllocator.Get(), nullptr);
 		assert(SUCCEEDED(hr));*/
+		//描画後処理
+		dxCommon->PostDraw();
 
 	}
 	

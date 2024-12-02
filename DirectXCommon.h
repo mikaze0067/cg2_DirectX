@@ -28,6 +28,10 @@ public: //メンバ変数
 
 	void Device();
 
+	//描画前処理
+	void PreDraw();
+	//描画後処理
+	void PostDraw();
 
 private:
 
@@ -59,6 +63,7 @@ private:
 	void DXCCompiler();
 
 	void ImGui();
+	
 
 	HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
 	//DXGIファクトリーの生成
@@ -104,6 +109,10 @@ private:
 
 	//初期値0でFenceを作る
 	Microsoft::WRL::ComPtr <ID3D12Fence> fence = nullptr;
+
+	uint64_t fenceValue = 0;
+
+	HANDLE fenceEvent = nullptr;
 
 	D3D12_VIEWPORT viewport{};
 
