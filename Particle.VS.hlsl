@@ -1,4 +1,4 @@
-//33ページ～の範囲
+z//33ページ～の範囲
 #include "Particle.hlsli"
 
 struct TransformationMatrix

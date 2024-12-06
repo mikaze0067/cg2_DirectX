@@ -49,6 +49,7 @@
   <ItemGroup>
     <FxCompile Include="Particle.VS.hlsl" />
     <FxCompile Include="Particle.PS.hlsl" />
+    <FxCompile Include="Particle.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -108,8 +109,5 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Particle.hlsli" />
   </ItemGroup>
 </Project>
