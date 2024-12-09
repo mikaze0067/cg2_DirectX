@@ -4,6 +4,7 @@
 //#include <format>
 //#include <dxgidebug.h>
 //#include <dxcapi.h>
+#include <d3d12.h>
 #include <vector>
 //#include <corecrt_math_defines.h>
 //#include <sstream>
@@ -16,8 +17,8 @@
 #include "math/OrthographicMatrix.h"
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
-//#include "externals/DirectXTex/DirectXTex.h"
-//#include "externals/DirectXTex/d3dx12.h"
+#include "externals/DirectXTex/DirectXTex.h"
+#include "externals/DirectXTex/d3dx12.h"
 #include "input.h"
 #include "WinApp.h"
 #include "DirectXCommon.h"
@@ -303,7 +304,7 @@ CreateTextureResource(Microsoft::WRL::ComPtr <ID3D12Device> device, const Direct
 		IID_PPV_ARGS(&resource)); //作成するResorceポインタへのポインタ
 	assert(SUCCEEDED(hr));
 	return resource;
-}
+}*/
 
 [[nodiscard]]
 Microsoft::WRL::ComPtr <ID3D12Resource> 
@@ -325,51 +326,51 @@ UploadTextureData(Microsoft::WRL::ComPtr <ID3D12Resource> texture, const DirectX
 	return intermediateResource;
 }
 
-Microsoft::WRL::ComPtr <ID3D12Resource>
-CreateDepthStencilTextureResource(Microsoft::WRL::ComPtr <ID3D12Device> device, int32_t width, int32_t height) {
-	//生成するResourceの設定
-	D3D12_RESOURCE_DESC resourceDesc{};
-	resourceDesc.Width = width;
-	resourceDesc.Height = height;
-	resourceDesc.MipLevels = 1;
-	resourceDesc.DepthOrArraySize = 1;
-	resourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; 
-	resourceDesc.SampleDesc.Count = 1;
-	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-	//利用するHeapの設定
-	D3D12_HEAP_PROPERTIES heapProperties{};
-	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-	//深度値のクリア設定
-	D3D12_CLEAR_VALUE despthClearValue{};
-	despthClearValue.DepthStencil.Depth = 1.0f;
-	despthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+//Microsoft::WRL::ComPtr <ID3D12Resource>
+//CreateDepthStencilTextureResource(Microsoft::WRL::ComPtr <ID3D12Device> device, int32_t width, int32_t height) {
+//	//生成するResourceの設定
+//	D3D12_RESOURCE_DESC resourceDesc{};
+//	resourceDesc.Width = width;
+//	resourceDesc.Height = height;
+//	resourceDesc.MipLevels = 1;
+//	resourceDesc.DepthOrArraySize = 1;
+//	resourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; 
+//	resourceDesc.SampleDesc.Count = 1;
+//	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+//	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+//	//利用するHeapの設定
+//	D3D12_HEAP_PROPERTIES heapProperties{};
+//	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+//	//深度値のクリア設定
+//	D3D12_CLEAR_VALUE despthClearValue{};
+//	despthClearValue.DepthStencil.Depth = 1.0f;
+//	despthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+//
+//	//Resourceの生成
+//	Microsoft::WRL::ComPtr <ID3D12Resource> resource = nullptr;
+//	HRESULT hr = device->CreateCommittedResource(
+//		&heapProperties, //Heapの設定
+//		D3D12_HEAP_FLAG_NONE, //Heapの特殊な設定
+//		&resourceDesc, //Resourceの設定
+//		D3D12_RESOURCE_STATE_DEPTH_WRITE, //データ転送される設定
+//		&despthClearValue, //Clear最適値
+//		IID_PPV_ARGS(&resource)); //作成するResorceポインタへのポインタ
+//	assert(SUCCEEDED(hr));
+//	return resource;
+//}
 
-	//Resourceの生成
-	Microsoft::WRL::ComPtr <ID3D12Resource> resource = nullptr;
-	HRESULT hr = device->CreateCommittedResource(
-		&heapProperties, //Heapの設定
-		D3D12_HEAP_FLAG_NONE, //Heapの特殊な設定
-		&resourceDesc, //Resourceの設定
-		D3D12_RESOURCE_STATE_DEPTH_WRITE, //データ転送される設定
-		&despthClearValue, //Clear最適値
-		IID_PPV_ARGS(&resource)); //作成するResorceポインタへのポインタ
-	assert(SUCCEEDED(hr));
-	return resource;
-}
-
-D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index) {
-
-	D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	handleCPU.ptr += (descriptorSize * index);
-	return handleCPU;
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index) {
-	D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
-	handleGPU.ptr += (descriptorSize * index);
-	return handleGPU;
-}
+//D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index) {
+//
+//	D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
+//	handleCPU.ptr += (descriptorSize * index);
+//	return handleCPU;
+//}
+//
+//D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index) {
+//	D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
+//	handleGPU.ptr += (descriptorSize * index);
+//	return handleGPU;
+//}
 
 MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename) {
 	MaterialData materialData;//構築するMaterialData
@@ -469,19 +470,19 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
 }
 
 
-struct D3DResourceLeakChecker {
-	~D3DResourceLeakChecker() {
-		//リソースリークチェック
-		Microsoft::WRL::ComPtr <IDXGIDebug1> debug;
-		if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug)))) {
-			debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
-			debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
-			debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
-		}
-	}
-};
+//struct D3DResourceLeakChecker {
+//	~D3DResourceLeakChecker() {
+//		//リソースリークチェック
+//		Microsoft::WRL::ComPtr <IDXGIDebug1> debug;
+//		if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug)))) {
+//			debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
+//			debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
+//			debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
+//		}
+//	}
+//};
 
-bool useMonsterBall = true;*/
+bool useMonsterBall = true;
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -1470,9 +1471,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		hr = commandAllocator->Reset();
 		assert(SUCCEEDED(hr));
 		hr = commandList->Reset(commandAllocator.Get(), nullptr);
-		assert(SUCCEEDED(hr));
+		assert(SUCCEEDED(hr));*/
 		//描画後処理
-		dxCommon->PostDraw();*/
+		dxCommon->PostDraw();
 
 	}
 	
