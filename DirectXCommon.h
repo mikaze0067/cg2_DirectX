@@ -28,6 +28,20 @@ public: //メンバ変数
 
 	void Device();
 
+	HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
+
+	//DXGIファクトリーの生成
+	Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory = nullptr;
+
+	Microsoft::WRL::ComPtr < ID3D12Device> device = nullptr;
+
+	//コマンドリストを生成する
+	Microsoft::WRL::ComPtr <ID3D12GraphicsCommandList> commandList = nullptr;
+
+	//dxcCompilerを初期化
+	IDxcUtils* dxcUtils = nullptr;
+	IDxcCompiler3* dxcCompiler = nullptr;
+
 
 private:
 
@@ -60,20 +74,13 @@ private:
 
 	void ImGui();
 
-	HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
-	//DXGIファクトリーの生成
-	Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory = nullptr;
-
-	Microsoft::WRL::ComPtr < ID3D12Device> device = nullptr;
-
 	//コマンドキューを生成する
 	Microsoft::WRL::ComPtr <ID3D12CommandQueue> commandQueue = nullptr;
 
 	//コマンドアロケーターを生成する
 	Microsoft::WRL::ComPtr <ID3D12CommandAllocator> commandAllocator = nullptr;
 
-	//コマンドリストを生成する
-	Microsoft::WRL::ComPtr <ID3D12GraphicsCommandList> commandList = nullptr;
+	
 
 	//WindowsAPI
 	WinApp* winApp = nullptr;
@@ -109,7 +116,5 @@ private:
 
 	D3D12_RECT scissorRect{};
 
-	//dxcCompilerを初期化
-	IDxcUtils* dxcUtils = nullptr;
-	IDxcCompiler3* dxcCompiler = nullptr;
+	
 };
