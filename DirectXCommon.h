@@ -5,6 +5,8 @@
 #include "WinApp.h"
 #include <array>
 #include <dxcapi.h>
+#include "Logger.h"
+#include "StringUtility.h"
 
 
 class DirectXCommon {
@@ -17,6 +19,7 @@ class DirectXCommon {
 		CreateDepthStencilTextureResource(Microsoft::WRL::ComPtr <ID3D12Device> device, int32_t width, int32_t height);
 
 
+
 public: //メンバ変数
 
 	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUDescriptorHandle(uint32_t index);
@@ -24,24 +27,9 @@ public: //メンバ変数
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUDescriptorHandle(uint32_t index);
 
 	//初期化
-	void Initialize();
+	void Initialize(WinApp* winApp);
 
 	void Device();
-
-	HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
-
-	//DXGIファクトリーの生成
-	Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory = nullptr;
-
-	Microsoft::WRL::ComPtr < ID3D12Device> device = nullptr;
-
-	//コマンドリストを生成する
-	Microsoft::WRL::ComPtr <ID3D12GraphicsCommandList> commandList = nullptr;
-
-	//dxcCompilerを初期化
-	IDxcUtils* dxcUtils = nullptr;
-	IDxcCompiler3* dxcCompiler = nullptr;
-
 
 private:
 
@@ -74,13 +62,21 @@ private:
 
 	void ImGui();
 
+	HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
+
+	//DXGIファクトリーの生成
+	Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory = nullptr;
+
+	Microsoft::WRL::ComPtr < ID3D12Device> device = nullptr;
+
 	//コマンドキューを生成する
 	Microsoft::WRL::ComPtr <ID3D12CommandQueue> commandQueue = nullptr;
 
 	//コマンドアロケーターを生成する
 	Microsoft::WRL::ComPtr <ID3D12CommandAllocator> commandAllocator = nullptr;
 
-	
+	//コマンドリストを生成する
+	Microsoft::WRL::ComPtr <ID3D12GraphicsCommandList> commandList = nullptr;
 
 	//WindowsAPI
 	WinApp* winApp = nullptr;
@@ -106,6 +102,8 @@ private:
 	//スワップチェーン
 	std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, 2> swapChainResources;
 
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle;
+
 	//RTVを2つ作るのでディスクリプタを2つ用意
 	D3D12_CPU_DESCRIPTOR_HANDLE	rtvHandles[2];
 
@@ -115,6 +113,10 @@ private:
 	D3D12_VIEWPORT viewport{};
 
 	D3D12_RECT scissorRect{};
+
+	//dxcCompilerを初期化
+	IDxcUtils* dxcUtils = nullptr;
+	IDxcCompiler3* dxcCompiler = nullptr;
 
 	
 };
