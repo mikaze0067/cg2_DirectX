@@ -5,6 +5,8 @@
 #include "WinApp.h"
 #include <array>
 #include <dxcapi.h>
+#include <string>
+#include "externals/DirectXTex/DirectXTex.h"
 
 
 class DirectXCommon {
@@ -15,6 +17,15 @@ class DirectXCommon {
 
 	Microsoft::WRL::ComPtr <ID3D12Resource>
 		CreateDepthStencilTextureResource(Microsoft::WRL::ComPtr <ID3D12Device> device, int32_t width, int32_t height);
+
+	Microsoft::WRL::ComPtr <IDxcBlob>CompileShader(const std::wstring& filePath, const wchar_t* profile);
+
+	Microsoft::WRL::ComPtr <ID3D12Resource> CreateBufferResource(size_t sizeInBytes);
+
+	Microsoft::WRL::ComPtr <ID3D12Resource>CreateTextureResource(Microsoft::WRL::ComPtr <ID3D12Device> device, const DirectX::TexMetadata& metadata);
+
+	static DirectX::ScratchImage LoadTexture(const std::string& filePath);
+
 
 
 public: //メンバ変数
@@ -32,6 +43,10 @@ public: //メンバ変数
 	void PreDraw();
 	//描画後処理
 	void PostDraw();
+
+	//getter
+	ID3D12Device* GetDevice()const { return device.Get(); }
+	ID3D12GraphicsCommandList* GetCommanList()const { return commandList.Get(); }
 
 private:
 
@@ -121,4 +136,6 @@ private:
 	//dxcCompilerを初期化
 	IDxcUtils* dxcUtils = nullptr;
 	IDxcCompiler3* dxcCompiler = nullptr;
+	IDxcIncludeHandler* includeHandler = nullptr;
+
 };

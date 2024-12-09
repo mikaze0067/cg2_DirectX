@@ -4,18 +4,18 @@
 //#include <format>
 //#include <dxgidebug.h>
 //#include <dxcapi.h>
-//#include <vector>
+#include <vector>
 //#include <corecrt_math_defines.h>
 //#include <sstream>
-//#include "math/Vector2.h"
-//#include "math/Affine.h"
-//#include "math/Inverse.h"
-//#include "math/PerspectiveFovMatrix.h"
-//#include "math/Vector4.h"
-//#include "math/Identity.h"
-//#include "math/OrthographicMatrix.h"
-//#include "externals/imgui/imgui_impl_dx12.h"
-//#include "externals/imgui/imgui_impl_win32.h"
+#include "math/Vector2.h"
+#include "math/Affine.h"
+#include "math/Inverse.h"
+#include "math/PerspectiveFovMatrix.h"
+#include "math/Vector4.h"
+#include "math/Identity.h"
+#include "math/OrthographicMatrix.h"
+#include "externals/imgui/imgui_impl_dx12.h"
+#include "externals/imgui/imgui_impl_win32.h"
 //#include "externals/DirectXTex/DirectXTex.h"
 //#include "externals/DirectXTex/d3dx12.h"
 #include "input.h"
@@ -25,7 +25,7 @@
 
 //#pragma comment(lib,"dxcompiler.lib")
 
-/*struct VertexData {
+struct VertexData {
 	Vector4 position;
 	Vector2 texcoord;
 	Vector3 normal;
@@ -115,7 +115,7 @@ Matrix4x4 worldViewProjectionMatrixSprite = Multiply(worldMatrixSprite, Multiply
 
 
 
-void Log(const std::string& message) {
+/*void Log(const std::string& message) {
 	OutputDebugStringA(message.c_str());
 }
 
@@ -505,6 +505,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//DirectXの初期化
 	dxCommon = new DirectXCommon();
 	dxCommon->Initialize();
+
 
 #pragma region	DirectInputの初期化
 
@@ -1469,9 +1470,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		hr = commandAllocator->Reset();
 		assert(SUCCEEDED(hr));
 		hr = commandList->Reset(commandAllocator.Get(), nullptr);
-		assert(SUCCEEDED(hr));*/
+		assert(SUCCEEDED(hr));
 		//描画後処理
-		dxCommon->PostDraw();
+		dxCommon->PostDraw();*/
 
 	}
 	
