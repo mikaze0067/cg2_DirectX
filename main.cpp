@@ -12,6 +12,7 @@
 #include <wrl.h>
 #include <fstream>
 #include <sstream>
+#include <random>
 #include "math/Vector2.h"
 #include "math/Affine.h"
 #include "math/Inverse.h"
@@ -19,6 +20,7 @@
 #include "math/Vector4.h"
 #include "math/Identity.h"
 #include "math/OrthographicMatrix.h"
+#include "math/MathUtilityForText.h"
 #include "externals/imgui/imgui.h"
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
@@ -77,6 +79,12 @@ struct  DirectionaLight{
 	Vector4 color;
 	Vector3 direction;
 	float intensity;
+};
+
+struct Particle {
+	Transform transform;
+	Vector3 velocity;
+	Vector4 color;
 };
 
 enum BlendMode {
@@ -140,7 +148,8 @@ Matrix4x4 projectionMatrixSprite = MakeOrthograhicMatrix(0.0f,0.0f, float(kClien
 
 Matrix4x4 worldViewProjectionMatrixSprite = Multiply(worldMatrixSprite, Multiply(viewMatrixSprite, projectionMatrixSprite));
 
-
+std::random_device seedGenerator;
+std::mt19937 randomEngine(seedGenerator());
 
 void Log(const std::string& message) {
 	OutputDebugStringA(message.c_str());
@@ -506,6 +515,18 @@ struct D3DResourceLeakChecker {
 	}
 };
 
+Particle MakeNewParticles(std::mt19937& randomEngine) {
+	std::uniform_real_distribution<float>distribution(-1.0f, 1.0f);
+	std::uniform_real_distribution<float> distColor(0.0f, 1.0f);
+	Particle particle;
+	particle.transform.scale = { 1.0f,1.0f,1.0f };
+	particle.transform.rotate = { 0.0f,0.0f,0.0f };
+	particle.transform.translate = { distribution(randomEngine),distribution(randomEngine),distribution(randomEngine) };
+	particle.velocity = { distribution(randomEngine),distribution(randomEngine),distribution(randomEngine) };
+	particle.color = { distribution(randomEngine),distribution(randomEngine),distribution(randomEngine),1.0f };
+	return particle;
+}
+
 bool useMonsterBall = true;
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -543,7 +564,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//ウィンドウの作成
 	HWND hwnd = CreateWindow(
 		wc.lpszClassName,
-		L"CG2",
+		L"LE2D_09_ササノ_ミカゼ",
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
@@ -1379,13 +1400,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	device->CreateShaderResourceView(instancingResource.Get(), &instancingSrvDesc, instancingSrvHandleCPU);
 #pragma endregion
 
-	Transform transforms[kNumInstance];
+	Particle particles[kNumInstance];
 	for (uint32_t index = 0; index < kNumInstance; ++index) {
-		transforms[index].scale = { 1.0f,1.0f,1.0f };
-		transforms[index].rotate = { 0.0f,0.0f,0.0f };
-		transforms[index].translate = { index * 0.1f,index * 0.1f,index * 0.1f };
+		particles[index] = MakeNewParticles(randomEngine);
 	}
-
+	const float kDeltaTime = 1.0f / 60.0f;
 	
 
 #pragma region ImGuiの初期化
@@ -1467,11 +1486,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 			Matrix4x4 viewProjectionMatrix = Multiply(viewMatrix, projectionMatrix);
 			for (uint32_t index = 0; index < kNumInstance; ++index) {
-				Matrix4x4 worldMatrix = MakeAffineMatrix(transforms[index].scale, transforms[index].rotate, transforms[index].translate);
+				Matrix4x4 worldMatrix = MakeAffineMatrix(particles[index].transform.scale, particles[index].transform.rotate, particles[index].transform.translate);
 				Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, viewProjectionMatrix);
 				instancingData[index].WVP = worldViewProjectionMatrix;
 				instancingData[index].World = worldMatrix;
+				particles[index].transform.translate += particles[index].velocity * kDeltaTime;
 			}
+			
 
 			//TransitionBarrierの設定
 			D3D12_RESOURCE_BARRIER barrier{};
