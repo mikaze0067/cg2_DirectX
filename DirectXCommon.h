@@ -54,6 +54,11 @@ public: //メンバ変数
 
 	void ImGui();
 
+	//描画前処理
+	void PreDraw();
+	//描画後処理
+	void PostDraw();
+
 	//SRVの指定番号のCPUデスクリプタハンドルを取得する
 	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUDescriptorHandle(uint32_t index);
 	//SRVの指定番号のCPUデスクリプタハンドルを取得する
@@ -112,13 +117,16 @@ private:
 
 	
 
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle;
 
 	//RTVを2つ作るのでディスクリプタを2つ用意
 	D3D12_CPU_DESCRIPTOR_HANDLE	rtvHandles[2];
 
 	//初期値0でFenceを作る
 	Microsoft::WRL::ComPtr <ID3D12Fence> fence = nullptr;
+
+	uint64_t fenceValue = 0;
+
+	HANDLE fenceEvent = nullptr;
 
 	D3D12_VIEWPORT viewport{};
 
