@@ -98,6 +98,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="main.cpp" />
     <ClCompile Include="math\Affine.cpp" />
     <ClCompile Include="math\Inverse.cpp" />
+    <ClCompile Include="math\MathUtilityForText.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.PS.hlsl">
@@ -123,6 +124,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="math\Affine.h" />
     <ClInclude Include="math\Identity.h" />
     <ClInclude Include="math\Inverse.h" />
+    <ClInclude Include="math\MathUtilityForText.h" />
     <ClInclude Include="math\Matrix4x4.h" />
     <ClInclude Include="math\OrthographicMatrix.h" />
     <ClInclude Include="math\PerspectiveFovMatrix.h" />
