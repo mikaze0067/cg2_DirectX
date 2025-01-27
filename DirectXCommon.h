@@ -117,7 +117,7 @@ private:
 
 	
 
-
+	Microsoft::WRL::ComPtr <ID3D12Resource> depthStencilResource;
 	//RTVを2つ作るのでディスクリプタを2つ用意
 	D3D12_CPU_DESCRIPTOR_HANDLE	rtvHandles[2];
 
@@ -142,5 +142,8 @@ private:
 
 	static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap,
 		uint32_t descriptorSize, uint32_t index);
+
+	//TransitionBarrierの設定
+	D3D12_RESOURCE_BARRIER barrier{};
 
 };

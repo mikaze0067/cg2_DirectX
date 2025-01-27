@@ -158,6 +158,10 @@ void DirectXCommon::Initialize(WinApp* winApp)
 	DXCCompiler();
 
 	ImGui();
+
+	PreDraw();
+
+	PostDraw();
 }
 
 void DirectXCommon::Device()
@@ -426,7 +430,7 @@ void DirectXCommon::DepthStencilView()
 #pragma region DepthStencil
 
 	//DepthStenCilTextureをウィンドウのサイズで作成
-	Microsoft::WRL::ComPtr <ID3D12Resource> depthStencilResource = CreateDepthStencilTextureResource(device, WinApp::kClientWidth, WinApp::kClientHeight);
+	depthStencilResource = CreateDepthStencilTextureResource(device, WinApp::kClientWidth, WinApp::kClientHeight);
 
 	//DSVの設定
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
@@ -669,8 +673,7 @@ void DirectXCommon::PreDraw()
 
 	//これから書き込むバックバッファのインデックスを取得
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
-	//TransitionBarrierの設定
-	D3D12_RESOURCE_BARRIER barrier{};
+	
 	//今回位のバリアはTransition
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	//Noneにしておく
@@ -706,12 +709,12 @@ void DirectXCommon::PostDraw()
 {
 	//これから書き込むバックバッファのインデックスを取得
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
-	D3D12_RESOURCE_BARRIER barrier{};
-	//Noneにしておく
-	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	//画面に描く処理はすべて終わり、画面に映すので、状態を遷移
+	//今回はRenderTargetからPresentにする
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 	//TransitionのBarrierを張る
-	commandList->ResourceBarrier(1, &barrier);
-	//コマンドリストの内容を確定させる。すべてのコマンドを積んでからClosseすること
+	commandList->ResourceBarrier(1, &barrier);	//コマンドリストの内容を確定させる。すべてのコマンドを積んでからClosseすること
 	hr = commandList->Close();
 	assert(SUCCEEDED(hr));
 	//GPUにコマンドの実行を行わせる
