@@ -670,7 +670,6 @@ void DirectXCommon::ImGui()
 
 void DirectXCommon::PreDraw()
 {
-
 	//これから書き込むバックバッファのインデックスを取得
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 	
