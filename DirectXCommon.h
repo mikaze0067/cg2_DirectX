@@ -14,6 +14,12 @@
 #include "externals/imgui/imgui_impl_dx12.h"
 #include <format>
 #include "externals/DirectXTex/DirectXTex.h"
+#include <chrono>
+
+#pragma comment(lib,"d3d12.lib")
+#pragma comment(lib,"dxgi.lib")
+#pragma comment(lib,"dxguid.lib")
+#pragma comment(lib,"dxcompiler.lib")
 
 class DirectXCommon {
 
@@ -89,6 +95,7 @@ public: //メンバ変数
 
 	void Finalize();
 
+
 	//SRVの指定番号のCPUデスクリプタハンドルを取得する
 	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUDescriptorHandle(uint32_t index);
 	//SRVの指定番号のCPUデスクリプタハンドルを取得する
@@ -138,6 +145,12 @@ public: //メンバ変数
 
 
 private:
+	//FPS固定初期化
+	void InitializeFixFPS();
+	//FPS固定更新
+	void UpdateFixFPS();
+	//記録時間（FPS固定用）
+	std::chrono::steady_clock::time_point reference_;
 
 #pragma region Device
 
@@ -191,8 +204,6 @@ private:
 	D3D12_CLEAR_VALUE depthClerValue{};
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource;
-
-
 
 #pragma endregion
 

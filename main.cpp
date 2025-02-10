@@ -15,7 +15,6 @@
 #include "math/Identity.h"
 #include "math/OrthographicMatrix.h"
 
-#include <d3d12.h>
 
 //#include "externals/imgui/imgui_impl_dx12.h"
 //#include "externals/imgui/imgui_impl_win32.h"
