@@ -40,6 +40,7 @@ struct Transform
 	Vector3 translate;
 };
 
+
 const int32_t kClientWidth = 1280;
 const int32_t kClientHeight = 720;
 
@@ -68,6 +69,15 @@ Matrix4x4 viewMatrixSprite = MakeIdentity4x4();
 Matrix4x4 projectionMatrixSprite = MakeOrthograhicMatrix(0.0f,0.0f, float(kClientWidth) , float(kClientHeight), 0.0f, 100.0f);
 
 Matrix4x4 worldViewProjectionMatrixSprite = Multiply(worldMatrixSprite, Multiply(viewMatrixSprite, projectionMatrixSprite));
+
+// コールバック関数のプロトタイプ宣言
+typedef void (*Callback)(int result);
+
+// 判定を行うコールバック関数
+void Vertical_rotation(int result) {
+
+	transform.rotate.x += 0.05f;
+}
 
 
 
@@ -999,7 +1009,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//これから書き込むバックバッファのインデックスを取得
 			UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
-			transform.rotate.y += 0.03f;
 
 			worldMatrix = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
 
@@ -1008,6 +1017,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			*wvpData = worldViewProjectionMatrix;
 
 			*transformationMatrixDataSprite = worldViewProjectionMatrixSprite;
+
+			Callback callback = Vertical_rotation;
+
+			callback(0);
 
 			//TransitionBarrierの設定
 			D3D12_RESOURCE_BARRIER barrier{};
