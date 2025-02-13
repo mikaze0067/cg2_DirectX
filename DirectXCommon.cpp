@@ -99,7 +99,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> DirectXCommon::CompileShader(const std::wstring
 		&shaderSourceBuffer,  // 読み込んだファイル
 		arguments,         //コンパイルオプション
 		_countof(arguments), //コンパイルオプションの数
-		includeHandler,  //includeが含まれた諸々
+		includeHandler.Get(),  //includeが含まれた諸々
 		IID_PPV_ARGS(&shaderResult) //コンパイル結果
 	);
 	//コンパイルエラーではなくdxcが起動できないなど致命的な状況
@@ -906,5 +906,4 @@ void DirectXCommon::Finalize()
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 	CloseHandle(fenceEvent);
-	CoUninitialize();
 }

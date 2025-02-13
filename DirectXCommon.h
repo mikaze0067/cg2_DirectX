@@ -274,9 +274,9 @@ private:
 #pragma region DXCCompiler
 
 	//dxcCompilerを初期化
-	IDxcUtils* dxcUtils;
-	IDxcCompiler3* dxcCompiler;
-	IDxcIncludeHandler* includeHandler;
+	Microsoft::WRL::ComPtr <IDxcUtils> dxcUtils;
+	Microsoft::WRL::ComPtr <IDxcCompiler3> dxcCompiler;
+	Microsoft::WRL::ComPtr <IDxcIncludeHandler> includeHandler;
 #pragma endregion
 
 #pragma region PreDraw
