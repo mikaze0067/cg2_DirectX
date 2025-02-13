@@ -25,9 +25,6 @@
 #include "DirectXCommon.h"
 #include "LeakChecker.h"
 
-
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
 struct VertexData {
 	Vector4 position;
 	Vector2 texcoord;
@@ -478,7 +475,6 @@ const uint32_t kSubdivision = 16;
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
-	CoInitializeEx(0, COINIT_MULTITHREADED);
 
 	D3DResourceLeakChecker leakCheck;
 	//
@@ -1509,6 +1505,5 @@ for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
 	//DirectX解放
 	delete dxCommon;
 
-	CoUninitialize();
 	return 0;
 }
